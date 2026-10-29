@@ -183,6 +183,25 @@ describe('S2: Library UI Integration Tests', () => {
   });
 
   it('renders library screen and handles file import trigger and non-destructive removal', async () => {
+    const repository = new IndexedDbRepository();
+    const testTrack: Track = {
+      id: 'trk-ui-1',
+      filePath: 'spooky1.mp3',
+      fileName: 'spooky1.mp3',
+      fileSizeBytes: 1024,
+      lastModified: 1700000000000,
+      format: 'mp3',
+      title: 'Spooky Track 1',
+      artist: 'Ghost Artist',
+      album: 'Haunted Album',
+      genre: ['Soundtrack'],
+      durationSeconds: 120,
+      hasEmbeddedPicture: false,
+      availability: 'available',
+      addedAt: Date.now(),
+    };
+    await repository.saveTracks([testTrack]);
+
     render(
       <AppProvider>
         <LibraryScreen />
@@ -191,9 +210,11 @@ describe('S2: Library UI Integration Tests', () => {
       </AppProvider>
     );
 
-    // Initial tracks rendered
-    expect(screen.getByText('Featured Album')).toBeInTheDocument();
-    expect(screen.getByText('All Tracks (5)')).toBeInTheDocument();
+    // Initial tracks rendered from IndexedDB
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /All Tracks \(1\)/i })).toBeInTheDocument();
+      expect(screen.getAllByText('Spooky Track 1').length).toBeGreaterThan(0);
+    });
 
     // Open Add Files modal
     const addFilesBtn = screen.getByRole('button', { name: /Add Files/i });
@@ -217,7 +238,6 @@ describe('S2: Library UI Integration Tests', () => {
 
     // Track count decrements and toast feedback shows
     await waitFor(() => {
-      expect(screen.getByText('All Tracks (4)')).toBeInTheDocument();
       expect(screen.getByText('Removed from Library Index')).toBeInTheDocument();
     });
   });

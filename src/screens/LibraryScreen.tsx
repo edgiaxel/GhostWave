@@ -6,6 +6,7 @@ export const LibraryScreen: React.FC = () => {
     tracks,
     playbackState,
     playTrack,
+    addToQueue,
     searchQuery,
     isScanning,
     scanProgress,
@@ -18,8 +19,8 @@ export const LibraryScreen: React.FC = () => {
   const [activeFilterPill, setActiveFilterPill] = useState<'all' | 'flac' | 'mp3' | 'missing_art'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
-  // Featured track for the hero card (defaults to track 3 or first track)
-  const featuredTrack = tracks[2] || tracks[0];
+  // Featured track for the hero card (uses currently playing or first track)
+  const featuredTrack = tracks.find((t) => t.id === playbackState.currentTrackId) || tracks[0] || null;
 
   const filteredTracks = tracks.filter((t) => {
     const matchesSearch =
@@ -46,10 +47,10 @@ export const LibraryScreen: React.FC = () => {
         <div className="flex flex-col gap-3 z-10 max-w-xl text-center md:text-left items-center md:items-start">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-primary/20 text-primary text-[11px] font-semibold tracking-wide">
-              Featured Album
+              {featuredTrack ? 'Featured Album' : 'Local Music Deck'}
             </span>
             <span className="text-xs text-outline font-mono">
-              {tracks.length} local tracks indexed
+              {tracks.length} local track{tracks.length === 1 ? '' : 's'} indexed
             </span>
           </div>
 
@@ -58,7 +59,9 @@ export const LibraryScreen: React.FC = () => {
               {featuredTrack ? featuredTrack.title : 'GhostWave Library'}
             </h1>
             <p className="text-sm text-on-surface-variant font-medium">
-              {featuredTrack ? `${featuredTrack.artist} • ${featuredTrack.album}` : 'Ready to import local audio'}
+              {featuredTrack
+                ? `${featuredTrack.artist} • ${featuredTrack.album}`
+                : 'Import your local audio files to start playing and organizing'}
             </p>
           </div>
 
@@ -86,17 +89,19 @@ export const LibraryScreen: React.FC = () => {
               <span className="material-symbols-outlined text-sm text-tertiary">folder_open</span>
               <span>Scan Folder</span>
             </button>
-            <button
-              onClick={() => rescanLibrary()}
-              disabled={isScanning}
-              className="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-bright text-outline hover:text-on-surface transition-colors border border-outline-variant/30 flex items-center justify-center disabled:opacity-40"
-              title="Rescan library files"
-              aria-label="Rescan library files"
-            >
-              <span className={`material-symbols-outlined text-base ${isScanning ? 'animate-spin' : ''}`}>
-                sync
-              </span>
-            </button>
+            {tracks.length > 0 && (
+              <button
+                onClick={() => rescanLibrary()}
+                disabled={isScanning}
+                className="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-bright text-outline hover:text-on-surface transition-colors border border-outline-variant/30 flex items-center justify-center disabled:opacity-40"
+                title="Rescan library files"
+                aria-label="Rescan library files"
+              >
+                <span className={`material-symbols-outlined text-base ${isScanning ? 'animate-spin' : ''}`}>
+                  sync
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -226,17 +231,26 @@ export const LibraryScreen: React.FC = () => {
           <h2 className="font-headline font-semibold text-base text-on-surface">No tracks found</h2>
           <p className="text-xs text-on-surface-variant max-w-sm">
             {tracks.length === 0
-              ? 'Your library index is empty. Import audio files or scan a folder to get started.'
+              ? 'Your library is empty. Select audio files or a local folder to begin.'
               : 'No tracks match your current filter or search criteria.'}
           </p>
           {tracks.length === 0 && (
-            <button
-              onClick={() => setActiveModal('add-files')}
-              className="mt-2 px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-base">add</span>
-              <span>Import Audio Files</span>
-            </button>
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={() => setActiveModal('add-files')}
+                className="px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                <span>Select Audio Files</span>
+              </button>
+              <button
+                onClick={() => setActiveModal('scan-folder')}
+                className="px-5 py-2.5 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium transition-colors border border-outline-variant/30 flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-base text-tertiary">folder_open</span>
+                <span>Scan Music Folder</span>
+              </button>
+            </div>
           )}
         </div>
       ) : viewMode === 'table' ? (
@@ -249,7 +263,7 @@ export const LibraryScreen: React.FC = () => {
                 <th className="py-3 px-4 hidden md:table-cell">Album</th>
                 <th className="py-3 px-4 hidden sm:table-cell">Format</th>
                 <th className="py-3 px-4 text-right">Time</th>
-                <th className="py-3 px-4 w-24 text-center">Actions</th>
+                <th className="py-3 px-4 w-28 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
@@ -329,6 +343,17 @@ export const LibraryScreen: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            addToQueue(track.id);
+                          }}
+                          className="w-7 h-7 rounded-full hover:bg-surface-container text-outline hover:text-on-surface flex items-center justify-center"
+                          aria-label={`Add ${track.title} to queue`}
+                          title="Add to queue"
+                        >
+                          <span className="material-symbols-outlined text-sm">playlist_add</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             removeTrackFromLibrary(track.id);
                           }}
                           className="w-7 h-7 rounded-full hover:bg-surface-container text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
@@ -366,16 +391,28 @@ export const LibraryScreen: React.FC = () => {
                     album
                   </span>
                 )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playTrack(track.id);
-                  }}
-                  className="absolute bottom-2.5 right-2.5 w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                  aria-label={`Play ${track.title}`}
-                >
-                  <span className="material-symbols-outlined text-lg font-bold">play_arrow</span>
-                </button>
+                <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToQueue(track.id);
+                    }}
+                    className="w-8 h-8 rounded-full bg-surface-container-high text-on-surface hover:text-primary flex items-center justify-center shadow-lg"
+                    title="Add to queue"
+                  >
+                    <span className="material-symbols-outlined text-base">playlist_add</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      playTrack(track.id);
+                    }}
+                    className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg"
+                    aria-label={`Play ${track.title}`}
+                  >
+                    <span className="material-symbols-outlined text-base font-bold">play_arrow</span>
+                  </button>
+                </div>
               </div>
               <div className="flex flex-col min-w-0">
                 <span className="text-xs font-semibold text-on-surface truncate">{track.title}</span>

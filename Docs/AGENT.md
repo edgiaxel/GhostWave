@@ -116,6 +116,7 @@ For each module, use the appropriate mix of unit tests, component tests, integra
 - Do not silently alter architecture or acceptance criteria.
 - Keep secrets out of source control and logs.
 - Update relevant docs when a deliberate contract changes.
+- ONLY change the checklist and DO NOT DELETE the content. All document in Docs/ is absolute except CHANGE-LOGS.md you can change it based on the development progress. 
 
 ## 11. Response format after each task
 

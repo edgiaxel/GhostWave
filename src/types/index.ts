@@ -63,10 +63,11 @@ export interface QueueItem {
 }
 
 /**
- * Transport playback state.
+ * Transport playback state (S3.1).
  */
 export interface PlaybackState {
   currentTrackId: string | null;
+  status: 'idle' | 'loading' | 'playing' | 'paused' | 'ended' | 'error';
   isPlaying: boolean;
   currentTimeSeconds: number;
   durationSeconds: number;
@@ -74,6 +75,7 @@ export interface PlaybackState {
   isMuted: boolean;
   repeatMode: 'off' | 'all' | 'one';
   shuffle: boolean;
+  errorMessage?: string;
 }
 
 /**

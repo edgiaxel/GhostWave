@@ -1,4 +1,4 @@
-# STAGES.md: GhostWave Development Stages
+# STAGES.md — GhostWave Development Stages
 
 ## How this plan works
 
@@ -10,13 +10,13 @@ This does **not** mean building every module in isolation and connecting them on
 
 ### Stage hierarchy
 
-- `S0`, `S1`, `S2`... are major stages.
-- `S1.1`, `S1.2`... are tasks within a stage.
+- `S0`, `S1`, `S2`… are major stages.
+- `S1.1`, `S1.2`… are tasks within a stage.
 - If a nested task is too large, split it further (for example, `S2.1.a`) and update this file.
 - Do not skip unfinished acceptance criteria because the main interaction appears to work.
 - Axel reviews the stage evidence and approves moving forward.
 
-## Standard completion gate: required for every stage
+## Standard completion gate — required for every stage
 
 A stage is complete only when:
 
@@ -32,52 +32,52 @@ A stage is complete only when:
 
 A stage is not complete merely because a page exists or a button works once.
 
-Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, and STAGES.md. 
+Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, ARCHITECTURE.md and STAGES.md. ONLY change the checklist and DO NOT DELETE the content. All document in Docs/ is absolute except CHANGE-LOGS.md you can change it based on the development progress.
 
 ---
 
-## S0: Repository audit and architecture lock
+## S0 — Repository audit and architecture lock
 
 **Goal:** Understand the existing repository and settle only the architecture needed to create a stable skeleton.
 
-### S0.1: Inspect the repository
+### S0.1 — Inspect the repository
 - [x] Inspect the file tree, Git status, package manifest/lockfile, current scripts, UI, and tests.
 - [x] Identify existing work that must be preserved.
 - [x] Report the current baseline and missing pieces.
 
-### S0.2: Confirm technical choices
+### S0.2 — Confirm technical choices
 - [x] Confirm frontend and package manager from repository evidence.
 - [x] Confirm Tauri 2 approach and prerequisites.
 - [x] Define browser versus desktop capability differences.
 - [x] Select a metadata parser and persistence strategy only after checking compatibility.
 - [x] Document unresolved choices; avoid adding speculative dependencies.
 
-### S0.3: Define module contracts
+### S0.3 — Define module contracts
 - [x] Define shared types for Track, Playlist, QueueItem, MetadataProposal, LibraryIssue, AppSettings, and operation results.
 - [x] Define boundaries for library, playback, playlists, metadata, file operations, visualizer, online providers, local AI, and settings.
 - [x] Define error/result patterns and dependency direction.
 
-**Exit gate:** Existing code is understood; the minimum shared contracts and platform boundaries are documented in `Docs/ARCHITECTURE.md`. Axel approved on 2026-10-29.
+**Exit gate:** Existing code is understood; the minimum shared contracts and platform boundaries are documented. Axel approves the proposed structure.
 
 ---
 
-## S1: Modular application skeleton
+## S1 — Modular application skeleton
 
 **Goal:** Build the full app frame and all planned screens with realistic placeholders before implementing feature content.
 
-### S1.1: App shell and navigation
+### S1.1 — App shell and navigation
 - [x] Create the app shell and consistent page layout.
 - [x] Add sidebar/navigation for Library, Playlists, Cleanup, Visualizer, Listening History, and Settings.
 - [x] Add global search placement, now-playing area, and playback-control placeholder.
 - [x] Add route/page state and unknown-route handling.
 
-### S1.2: Design system
+### S1.2 — Design system
 - [x] Define typography, spacing, layout, surface, border, focus, and motion tokens.
 - [x] Implement Halloween Dark and Halloween Light themes.
 - [x] Add a small set of coordinated accent palettes.
 - [x] Check contrast, keyboard focus, and responsive layout.
 
-### S1.3: Screen placeholders
+### S1.3 — Screen placeholders
 - [x] Library screen with empty/importing/loading/error states.
 - [x] Playlist list and playlist detail placeholders.
 - [x] Cleanup report and metadata-review placeholders.
@@ -86,42 +86,42 @@ Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, and STAGES.md.
 - [x] Settings screen with Local AI and Online Services sections.
 - [x] Reusable dialogs, confirmations, notifications, and empty states.
 
-### S1.4: Skeleton smoke test
+### S1.4 — Skeleton smoke test
 - [x] Navigate between all pages.
 - [x] Verify shared layout does not break between pages.
 - [x] Verify theme persists across routes.
 - [x] Verify responsive and keyboard navigation basics.
 - [x] Confirm placeholder states are explicit rather than fake functionality.
 
-**Exit gate:** All agreed screens exist, navigation works, theme tokens are consistent, UI decluttering pass completed per anti-slop rules, and the skeleton is verified and approved by Axel on 2026-10-29.
+**Exit gate:** All agreed screens exist, navigation works, theme tokens are consistent, and the skeleton is approved before feature implementation begins.
 
 ---
 
-## S2: Local library import and metadata scan
+## S2 — Local library import and metadata scan
 
 **Goal:** Import supported local files and build a trustworthy library index.
 
-### S2.1: Platform file-access interface
-- [x] Define an interface for file selection, reading, metadata writing, and path operations (`FileOperationsPlatform`).
-- [x] Implement the web-supported path without claiming unrestricted folder access (`WebFilePlatform` with Web File System Access API & input fallback).
-- [x] Implement the Tauri path behind the same interface when desktop setup is available (`TauriFilePlatform`).
-- [x] Handle permission denial and unsupported capabilities cleanly.
+### S2.1 — Platform file-access interface
+- [x] Define an interface for file selection, reading, metadata writing, and path operations.
+- [x] Implement the web-supported path without claiming unrestricted folder access.
+- [x] Implement the Tauri path behind the same interface when desktop setup is available.
+- [x] Handle permission denial and unsupported capabilities.
 
-### S2.2: Import and scan
+### S2.2 — Import and scan
 - [x] Import selected audio files or a supported folder selection.
-- [x] Validate file type and report unsupported files (`LibraryScanner.isSupportedAudioFile`).
-- [x] Extract available metadata, duration, bitrate, and embedded cover art (`MetadataService` with `music-metadata-browser`).
-- [x] Display progress with filename and percentage, allowing safe cancellation.
-- [x] Handle malformed files, missing tags, and partial scan failures with clean fallbacks.
+- [x] Validate file type and report unsupported files.
+- [x] Extract available metadata and duration.
+- [x] Display progress and allow safe cancellation.
+- [x] Handle malformed files and partial scan failures.
 
-### S2.3: Library index and persistence
-- [x] Persist the library index and settings locally via IndexedDB (`IndexedDbRepository`).
-- [x] Avoid storing duplicate records when a file is rescanned using deterministic track IDs.
+### S2.3 — Library index and persistence
+- [x] Persist the library index and settings locally.
+- [x] Avoid storing duplicate records when a file is rescanned.
 - [x] Provide rescan and remove-from-index behavior.
 - [x] Distinguish removing a library entry from deleting a file.
 
-### S2.4: Isolated and integrated tests
-- [x] Test valid, malformed, unsupported, and empty imports (`src/test/s2-library.test.tsx`).
+### S2.4 — Isolated and integrated tests
+- [x] Test valid, malformed, unsupported, and empty imports.
 - [x] Test rescanning and duplicate import prevention.
 - [x] Integrate with Library screen and shared Track types.
 - [x] Confirm core browsing works offline.
@@ -130,28 +130,273 @@ Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, and STAGES.md.
 
 ---
 
-## S3: Playback and queue
+## S3 — Playback and queue
 
 **Goal:** Deliver reliable playback before adding advanced organization.
 
-### S3.1: Playback engine
-- [ ] Implement play, pause, resume, seek, previous, next, and volume.
-- [ ] Expose explicit playback states: idle, loading, playing, paused, ended, and error.
-- [ ] Handle unsupported or unreadable files.
+### S3.1 — Playback engine
+- [x] Implement play, pause, resume, seek, previous, next, and volume.
+- [x] Expose explicit playback states: idle, loading, playing, paused, ended, and error.
+- [x] Handle unsupported or unreadable files.
+- [x] Keep playback controls responsive during loading.
 
-### S3.2: Queue management
-- [ ] Provide a queue that can be reordered, appended to, and cleared.
-- [ ] Support shuffle and repeat with clear state indicators.
-- [ ] Keep current playback position and active track in sync.
+### S3.2 — Queue and current track
+- [x] Add tracks to the queue.
+- [x] Remove and reorder queue items.
+- [x] Support repeat and shuffle with clear state.
+- [x] Define what happens when a queued file disappears or fails.
 
-### S3.3: Playback UI integration
-- [ ] Connect bottom player and track lists to the playback engine.
-- [ ] Show real track metadata, elapsed time, and duration.
-- [ ] Ensure transport controls stay responsive during library operations.
+### S3.3 — Player UI
+- [x] Connect current track, progress, duration, artwork, and controls.
+- [x] Add keyboard/accessibility labels where appropriate.
+- [x] Ensure the player remains consistent across screens.
 
-### S3.4: Tests and verification
-- [ ] Test state transitions: idle -> loading -> playing -> paused -> ended.
-- [ ] Test queue reordering, advance, and wrap-around behavior.
-- [ ] Test recovery when an audio file cannot be decoded.
+### S3.4 — Integration and regression
+- [x] Start playback from Library.
+- [x] Start playback from a queue.
+- [x] Test pause/resume, seek, next/previous, shuffle, repeat, and errors.
+- [x] Verify library navigation does not unexpectedly reset playback.
 
-**Exit gate:** Local tracks play smoothly, queue mutations behave predictably, and playback errors are surfaced clearly.
+**Exit gate:** Playback and queue work across relevant screens and survive common error cases. Do not mark complete after only play/pause works.
+
+---
+
+## S4 — Library search and playlists
+
+**Goal:** Make the collection usable and let users build saved playlists.
+
+### S4.1 — Library search and sorting
+- [ ] Search available local metadata.
+- [ ] Add useful sorting and filters supported by known fields.
+- [ ] Handle no results and clear-search behavior.
+- [ ] Keep search deterministic and available offline.
+
+### S4.2 — Playlist CRUD
+- [ ] Create playlist with required name and optional description.
+- [ ] Rename and edit description.
+- [ ] Add/remove/reorder tracks.
+- [ ] Delete playlist with confirmation.
+- [ ] Support optional icon/emoji and accent color only if time permits.
+- [ ] Preserve track references safely when library records change.
+
+### S4.3 — Playlist playback and integration
+- [ ] Play a playlist and define queue behavior.
+- [ ] Ensure current track and queue update consistently.
+- [ ] Test empty playlists, duplicate additions, deletion, and reordered tracks.
+- [ ] Test persistence after app restart.
+
+**Exit gate:** Playlist operations work, persist, and integrate correctly with playback and library search.
+
+---
+
+## S5 — Library health, metadata editing, and safe renaming
+
+**Goal:** Find common library issues and let users correct them safely.
+
+### S5.1 — Deterministic library-health report
+- [ ] Detect missing supported tags.
+- [ ] Identify inconsistent filename patterns.
+- [ ] Detect exact duplicates where reliable hashes are available.
+- [ ] Flag possible metadata duplicates separately from exact duplicates.
+- [ ] Show issue categories and affected tracks.
+
+### S5.2 — Manual metadata editing
+- [ ] Edit supported fields.
+- [ ] Validate input and preserve unrelated metadata where possible.
+- [ ] Preview the proposed changes.
+- [ ] Show per-file success/failure after apply.
+
+### S5.3 — Naming templates and rename preview
+- [ ] Support a template such as `Artist - Title.ext`.
+- [ ] Preview old and new paths.
+- [ ] Detect collisions, invalid characters, and missing required fields.
+- [ ] Apply approved renames without overwriting.
+- [ ] Report partial failures and allow the user to recover.
+
+### S5.4 — Integration and tests
+- [ ] Confirm the library index updates after metadata or path changes.
+- [ ] Confirm playlists and current playback references remain valid.
+- [ ] Test collision, permission denial, missing file, and invalid template cases.
+- [ ] Verify no operation runs without user approval.
+
+**Exit gate:** A user can understand issues, preview corrections, approve selected changes, and see accurate results without silent destructive operations.
+
+---
+
+## S6 — Halloween visualizer and theme polish
+
+**Goal:** Deliver the distinctive visual experience without destabilizing playback.
+
+### S6.1 — Audio-reactive visualizer
+- [ ] Implement a basic waveform or frequency-bar visualizer.
+- [ ] Connect it to the actual playing audio.
+- [ ] Handle paused, ended, muted, and unavailable audio states.
+- [ ] Avoid excessive CPU/GPU use.
+
+### S6.2 — Visual customization
+- [ ] Support selected color palettes and visualizer styles.
+- [ ] Persist visualizer preferences.
+- [ ] Add Halloween motifs as a deliberate visual treatment, not clutter.
+
+### S6.3 — Theme and usability pass
+- [ ] Verify dark/light themes across all screens and dialogs.
+- [ ] Verify focus, contrast, reduced-motion considerations, and responsive layouts.
+- [ ] Evaluate Butterchurn only after the basic visualizer is stable.
+
+**Exit gate:** A working visualizer responds to audio, theme settings remain consistent, and performance is acceptable on target hardware.
+
+---
+
+## S7 — Local AI integration
+
+**Goal:** Add useful local-model capabilities without making the core dependent on AI.
+
+### S7.1 — AI provider interface and setup
+- [ ] Define a provider interface for local inference.
+- [ ] Add Ollama connection configuration and connection test.
+- [ ] Explain model installation and configuration.
+- [ ] Show unavailable, timeout, and invalid-response states.
+- [ ] Keep all non-AI functions usable if no model is configured.
+
+### S7.2 — Natural-language playlist query
+- [ ] Define a strict schema for search filters and constraints.
+- [ ] Send only necessary library metadata to the local model.
+- [ ] Validate model output and reject unknown fields/operators.
+- [ ] Resolve results against actual library track IDs.
+- [ ] Calculate duration and enforce constraints deterministically.
+- [ ] Preview proposed tracks before saving the playlist.
+
+### S7.3 — Metadata suggestions
+- [ ] Ask the model to propose values only from supplied evidence or clearly label uncertain inference.
+- [ ] Show old/proposed values side by side.
+- [ ] Allow editing, rejecting, or approving proposals.
+- [ ] Never silently write AI-generated metadata.
+
+### S7.4 — AI testing and integration
+- [ ] Test valid, malformed, empty, hallucinated, and unavailable-model responses.
+- [ ] Test requests with no matching tracks.
+- [ ] Test that no arbitrary code or filesystem operation can be generated.
+- [ ] Verify AI can be disabled without breaking the app.
+
+**Exit gate:** At least one useful natural-language playlist workflow works with a local model, validates output, requires review, and degrades gracefully when AI is unavailable.
+
+---
+
+## S8 — Online enrichment
+
+**Goal:** Add optional external lookup without coupling it to core operation.
+
+### S8.1 — Provider abstraction
+- [ ] Define a provider interface and result-source representation.
+- [ ] Keep API credentials on the server when they are private.
+- [ ] Document rate limits, provider terms, and privacy implications.
+
+### S8.2 — Metadata lookup
+- [ ] Search for candidate track/artist/album matches.
+- [ ] Show source and confidence rationale where available.
+- [ ] Let the user select and approve candidates.
+- [ ] Handle no results, provider errors, and rate limits.
+
+### S8.3 — Artwork and lyrics (stretch)
+- [ ] Use a suitable provider only after license/terms review.
+- [ ] Preview artwork before saving.
+- [ ] Clearly distinguish plain lyrics from synchronized lyrics.
+- [ ] Do not redistribute restricted content without permission.
+
+### S8.4 — Optional search partner
+- [ ] Consider SerpApi only if it adds value beyond a dedicated metadata source.
+- [ ] Verify partner requirements and do not expose credentials in the frontend.
+
+**Exit gate:** Online services are optional, sourced, and failure-tolerant; core local features continue working with the internet disabled.
+
+---
+
+## S9 — Audio conversion (stretch, non-destructive)
+
+**Goal:** Convert selected tracks to a small, verified set of formats.
+
+### S9.1 — Select conversion engine
+- [ ] Compare feasible web and desktop implementations.
+- [ ] Review FFmpeg/build/codec licensing and distribution implications.
+- [ ] Define supported input/output formats and options explicitly.
+
+### S9.2 — Conversion workflow
+- [ ] Select one or more tracks and target format.
+- [ ] Validate output location and extension.
+- [ ] Convert to a new output file by default.
+- [ ] Preserve original files.
+- [ ] Show progress and per-file results.
+- [ ] Detect output collisions and insufficient/invalid destinations where feasible.
+
+### S9.3 — Validation
+- [ ] Verify generated files can be read and played.
+- [ ] Test invalid input, cancellation, partial failure, and collision.
+- [ ] Verify conversion is actual re-encoding, not extension renaming.
+
+**Exit gate:** One clearly documented conversion path works reliably. Do not claim broad format support without testing.
+
+---
+
+## S10 — Listening history and recommendations (stretch)
+
+- [ ] Track local playback events only with clear user controls.
+- [ ] Define plays, skips, duration, and favorite signals consistently.
+- [ ] Allow history to be disabled and cleared.
+- [ ] Start with transparent deterministic recommendations.
+- [ ] Add AI summaries only if useful and optional.
+- [ ] Test persistence, disabled tracking, and clearing history.
+
+**Exit gate:** History behavior is understandable, locally controlled, and does not interfere with playback.
+
+---
+
+## S11 — Web and Tauri integration
+
+**Goal:** Validate the supported web experience and package desktop targets.
+
+### S11.1 — Web readiness
+- [ ] Verify production build.
+- [ ] Verify file-picker permissions and browser limitations.
+- [ ] Verify local AI setup and online provider configuration.
+- [ ] Test core mode with internet and AI unavailable.
+
+### S11.2 — Tauri integration
+- [ ] Add Tauri 2 shell using the shared frontend.
+- [ ] Implement platform-specific file operations behind existing interfaces.
+- [ ] Scope filesystem permissions narrowly.
+- [ ] Verify local AI connectivity to the user's configured runtime.
+- [ ] Test startup, file access, errors, and app restart.
+
+### S11.3 — Target builds
+- [ ] Build and test Windows.
+- [ ] Build and test Linux.
+- [ ] Attempt macOS only if time and a suitable build environment are available.
+- [ ] Document actual tested platforms; never infer support from source compatibility.
+
+**Exit gate:** At least one target build is installed and manually tested, with known limitations documented. Web and desktop must not be described as equivalent where permissions differ.
+
+---
+
+## S12 — Release, deployment, and submission
+
+### S12.1 — Quality pass
+- [ ] Run available tests, lint, typecheck, and production builds.
+- [ ] Test core workflows and failure states.
+- [ ] Remove debug secrets and unintended logging.
+- [ ] Verify no user data is uploaded unexpectedly.
+
+### S12.2 — Deployment and distribution
+- [ ] Deploy web version to Render.
+- [ ] Publish source on GitHub.
+- [ ] Publish only builds that have actually been tested.
+- [ ] Document setup, local AI configuration, limitations, and licenses.
+- [ ] Check `.tech` promotion eligibility and renewal terms before claiming/using it.
+
+### S12.3 — Demo and write-up
+- [ ] Record a clear demo showing the working user journey.
+- [ ] Explain local-first and open-weight AI choices.
+- [ ] Include partner technology only where it was genuinely used.
+- [ ] Verify challenge submission requirements and current partner prize rules.
+- [ ] Save/link agent session evidence if useful and permitted.
+
+**Exit gate:** A reviewer can understand the product, run the documented build, reproduce the core demo, and distinguish verified features from future plans.

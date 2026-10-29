@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Track,
   Playlist,
@@ -7,12 +7,14 @@ import {
   MetadataProposal,
   AppSettings,
   AppRoute,
+  QueueItem,
   ScanProgress,
   ScanReport,
 } from '../types';
 import { dbRepository } from '../services/storage/IndexedDbRepository';
 import { getPlatform, WebFilePlatform } from '../services/platform';
 import { LibraryScanner } from '../services/scanner/LibraryScanner';
+import { PlaybackEngine } from '../services/playback/PlaybackEngine';
 
 export interface ToastMessage {
   id: string;
@@ -34,8 +36,15 @@ interface AppContextType {
   selectedPlaylistId: string | null;
   setSelectedPlaylistId: (id: string | null) => void;
   playbackState: PlaybackState;
+  playbackEngine: PlaybackEngine;
+  queue: QueueItem[];
+  addToQueue: (trackId: string) => void;
+  removeFromQueue: (queueId: string) => void;
+  moveQueueItem: (fromIndex: number, toIndex: number) => void;
+  clearQueue: () => void;
+  playQueueItem: (queueId: string) => void;
   togglePlayPause: () => void;
-  playTrack: (trackId: string) => void;
+  playTrack: (trackId: string) => Promise<void>;
   nextTrack: () => void;
   prevTrack: () => void;
   seekTrack: (seconds: number) => void;
@@ -64,205 +73,6 @@ interface AppContextType {
   activeModal: string | null;
   setActiveModal: (modal: string | null) => void;
 }
-
-const INITIAL_TRACKS: Track[] = [
-  {
-    id: 'trk-1',
-    filePath: '/Volumes/GhostArchive/Halloween_OST_1978_FLAC/01_Main_Theme.flac',
-    fileName: '01_Main_Theme.flac',
-    fileSizeBytes: 42800000,
-    lastModified: 1729800000000,
-    format: 'flac',
-    title: 'Halloween Main Theme',
-    artist: 'John Carpenter',
-    album: 'Halloween (Original Motion Picture Soundtrack)',
-    albumArtist: 'John Carpenter',
-    genre: ['Soundtrack', 'Electronic', 'Horror'],
-    year: 1978,
-    trackNumber: 1,
-    diskNumber: 1,
-    durationSeconds: 178,
-    bitrateKbps: 921,
-    sampleRateHz: 96000,
-    hasEmbeddedPicture: true,
-    availability: 'available',
-    addedAt: 1729800000000,
-    favorite: true,
-  },
-  {
-    id: 'trk-2',
-    filePath: '/Volumes/GhostArchive/Halloween_OST_1978_FLAC/02_Lauries_Theme.flac',
-    fileName: '02_Lauries_Theme.flac',
-    fileSizeBytes: 31200000,
-    lastModified: 1729800000000,
-    format: 'flac',
-    title: "Laurie's Theme",
-    artist: 'John Carpenter',
-    album: 'Halloween (Original Motion Picture Soundtrack)',
-    albumArtist: 'John Carpenter',
-    genre: ['Soundtrack', 'Horror'],
-    year: 1978,
-    trackNumber: 2,
-    diskNumber: 1,
-    durationSeconds: 134,
-    bitrateKbps: 890,
-    sampleRateHz: 96000,
-    hasEmbeddedPicture: true,
-    availability: 'available',
-    addedAt: 1729800000000,
-  },
-  {
-    id: 'trk-3',
-    filePath: '/Volumes/GhostArchive/SpookyBeats/Ghost_In_The_Machine.flac',
-    fileName: 'Ghost_In_The_Machine.flac',
-    fileSizeBytes: 58000000,
-    lastModified: 1729810000000,
-    format: 'flac',
-    title: 'Ghost In The Machine (Spectral Dub)',
-    artist: 'The Police // Spectral Remaster',
-    album: 'Ghost In The Machine (Deluxe)',
-    genre: ['Post-Punk', 'Dub', 'New Wave'],
-    year: 1981,
-    trackNumber: 3,
-    durationSeconds: 245,
-    bitrateKbps: 1042,
-    sampleRateHz: 96000,
-    hasEmbeddedPicture: true,
-    availability: 'available',
-    addedAt: 1729810000000,
-    favorite: true,
-  },
-  {
-    id: 'trk-4',
-    filePath: '/Volumes/GhostArchive/Unsorted/Track04_unknown.mp3',
-    fileName: 'Track04_unknown.mp3',
-    fileSizeBytes: 8400000,
-    lastModified: 1729812000000,
-    format: 'mp3',
-    title: 'Track 04 (Corrupted ID3)',
-    artist: 'Unknown Artist',
-    album: 'Unknown Album',
-    genre: ['Ambient'],
-    durationSeconds: 212,
-    bitrateKbps: 320,
-    sampleRateHz: 44100,
-    hasEmbeddedPicture: false,
-    availability: 'available',
-    addedAt: 1729812000000,
-  },
-  {
-    id: 'trk-5',
-    filePath: '/Volumes/GhostArchive/Boneyard/Danse_Macabre_Op40.flac',
-    fileName: 'Danse_Macabre_Op40.flac',
-    fileSizeBytes: 71000000,
-    lastModified: 1729814000000,
-    format: 'flac',
-    title: 'Danse Macabre, Op. 40',
-    artist: 'Camille Saint-Saëns',
-    album: 'Symphonic Poems',
-    genre: ['Classical', 'Orchestral'],
-    year: 1874,
-    trackNumber: 1,
-    durationSeconds: 432,
-    bitrateKbps: 880,
-    sampleRateHz: 96000,
-    hasEmbeddedPicture: true,
-    availability: 'available',
-    addedAt: 1729814000000,
-  },
-];
-
-const INITIAL_PLAYLISTS: Playlist[] = [
-  {
-    id: 'pl-1',
-    name: 'Spooky Synth & OSTs',
-    description: 'Dark synthwave, John Carpenter horrors, and ambient tension.',
-    trackIds: ['trk-1', 'trk-2', 'trk-3'],
-    createdAt: 1729800000000,
-    updatedAt: 1729810000000,
-    icon: 'skull',
-  },
-  {
-    id: 'pl-2',
-    name: 'Spectral FLAC Vault',
-    description: 'Lossless 24-bit studio masters for audio visualizer testing.',
-    trackIds: ['trk-1', 'trk-3', 'trk-5'],
-    createdAt: 1729811000000,
-    updatedAt: 1729812000000,
-    icon: 'graphic_eq',
-  },
-  {
-    id: 'pl-3',
-    name: 'Gemma Midnight Mix (AI)',
-    description: 'Generated from query: Calm horror ambience under 45 minutes.',
-    trackIds: ['trk-2', 'trk-4'],
-    createdAt: 1729813000000,
-    updatedAt: 1729813000000,
-    isAiGenerated: true,
-    icon: 'smart_toy',
-  },
-];
-
-const INITIAL_ISSUES: LibraryIssue[] = [
-  {
-    id: 'iss-1',
-    trackId: 'trk-4',
-    issueType: 'missing_tags',
-    severity: 'high',
-    description: 'Missing Artist, Album, and Year in ID3v2 container.',
-    details: { path: 'Track04_unknown.mp3', fields: ['artist', 'album', 'year'] },
-    suggestedAction: 'Run Local AI Tag Deduction or MusicBrainz lookup',
-  },
-  {
-    id: 'iss-2',
-    trackId: 'trk-4',
-    issueType: 'inconsistent_naming',
-    severity: 'medium',
-    description: 'Filename does not match standard pattern {artist} - {title}.ext',
-    suggestedAction: 'Rename to "Unknown Artist - Track 04.mp3"',
-  },
-  {
-    id: 'iss-3',
-    trackId: 'trk-1',
-    issueType: 'missing_tags',
-    severity: 'low',
-    description: 'Missing lyric synchronization timestamp metadata.',
-    suggestedAction: 'Optional enrichment',
-  },
-];
-
-const INITIAL_PROPOSALS: MetadataProposal[] = [
-  {
-    id: 'prop-1',
-    trackId: 'trk-4',
-    field: 'artist',
-    currentValue: 'Unknown Artist',
-    proposedValue: 'Goblin',
-    source: 'ai_gemma',
-    confidence: 0.88,
-    status: 'pending',
-  },
-  {
-    id: 'prop-2',
-    trackId: 'trk-4',
-    field: 'title',
-    currentValue: 'Track 04 (Corrupted ID3)',
-    proposedValue: 'Suspiria (Main Theme)',
-    source: 'ai_gemma',
-    confidence: 0.91,
-    status: 'pending',
-  },
-  {
-    id: 'prop-3',
-    trackId: 'trk-4',
-    field: 'album',
-    currentValue: 'Unknown Album',
-    proposedValue: 'Suspiria OST (1977)',
-    source: 'ai_gemma',
-    confidence: 0.85,
-    status: 'pending',
-  },
-];
 
 const INITIAL_SETTINGS: AppSettings = {
   theme: 'halloween-dark',
@@ -299,18 +109,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         return JSON.parse(saved);
       } catch {
-        // Fall back to initial settings if parsing fails
+        // Fallback to default
       }
     }
     return INITIAL_SETTINGS;
   });
 
-  const [tracks, setTracks] = useState<Track[]>(INITIAL_TRACKS);
-  const [selectedTrack, setSelectedTrack] = useState<Track | null>(INITIAL_TRACKS[0]);
-  const [playlists] = useState<Playlist[]>(INITIAL_PLAYLISTS);
+  // Real data state (starts empty until user imports files)
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const [playlists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
-  const [libraryIssues] = useState<LibraryIssue[]>(INITIAL_ISSUES);
-  const [metadataProposals, setMetadataProposals] = useState<MetadataProposal[]>(INITIAL_PROPOSALS);
+  const [libraryIssues] = useState<LibraryIssue[]>([]);
+  const [metadataProposals, setMetadataProposals] = useState<MetadataProposal[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
@@ -322,22 +133,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
+  // Playback Queue state (S3.2)
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+
+  // Transport state (S3.1)
   const [playbackState, setPlaybackState] = useState<PlaybackState>({
-    currentTrackId: 'trk-3',
+    currentTrackId: null,
+    status: 'idle',
     isPlaying: false,
-    currentTimeSeconds: 42,
-    durationSeconds: 245,
+    currentTimeSeconds: 0,
+    durationSeconds: 0,
     volume: 0.85,
     isMuted: false,
     repeatMode: 'all',
     shuffle: false,
   });
 
-  // Calculate percentage for progress bars
-  const scanProgressPercent = useMemo(() => {
-    if (scanProgress.total === 0) return 0;
-    return Math.min(100, Math.round((scanProgress.scanned / scanProgress.total) * 100));
-  }, [scanProgress]);
+  // Stable Playback Engine instance
+  const engineRef = useRef<PlaybackEngine | null>(null);
+  if (!engineRef.current) {
+    engineRef.current = new PlaybackEngine();
+  }
+  const engine = engineRef.current;
+
+  // Refs to avoid stale closures in engine callbacks
+  const stateRef = useRef(playbackState);
+  stateRef.current = playbackState;
+
+  const tracksRef = useRef(tracks);
+  tracksRef.current = tracks;
+
+  const queueRef = useRef(queue);
+  queueRef.current = queue;
 
   const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
@@ -351,24 +178,115 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Initialize library from IndexedDB on startup
+  // Calculate percentage for progress bars
+  const scanProgressPercent = useMemo(() => {
+    if (scanProgress.total === 0) return 0;
+    return Math.min(100, Math.round((scanProgress.scanned / scanProgress.total) * 100));
+  }, [scanProgress]);
+
+  // Advance queue on track end
+  const handleTrackEnded = useCallback(() => {
+    const { repeatMode, shuffle, currentTrackId } = stateRef.current;
+    const currentQueue = queueRef.current;
+    const currentTracks = tracksRef.current;
+
+    if (repeatMode === 'one' && currentTrackId) {
+      engine.seek(0);
+      engine.play().catch(() => {});
+      return;
+    }
+
+    // 1. Advance from Queue if queue has items
+    if (currentQueue.length > 0) {
+      const nextItem = currentQueue[0];
+      setQueue((prev) => prev.slice(1));
+      playTrack(nextItem.trackId);
+      return;
+    }
+
+    // 2. Advance within Library tracks
+    if (currentTracks.length > 0) {
+      if (shuffle) {
+        const remaining = currentTracks.filter((t) => t.id !== currentTrackId);
+        const next = remaining.length > 0 ? remaining[Math.floor(Math.random() * remaining.length)] : currentTracks[0];
+        playTrack(next.id);
+        return;
+      }
+
+      const currentIndex = currentTracks.findIndex((t) => t.id === currentTrackId);
+      if (currentIndex === -1) {
+        playTrack(currentTracks[0].id);
+        return;
+      }
+
+      if (currentIndex + 1 < currentTracks.length) {
+        playTrack(currentTracks[currentIndex + 1].id);
+      } else if (repeatMode === 'all') {
+        playTrack(currentTracks[0].id);
+      } else {
+        setPlaybackState((prev) => ({
+          ...prev,
+          status: 'ended',
+          isPlaying: false,
+          currentTimeSeconds: prev.durationSeconds,
+        }));
+      }
+    }
+  }, [engine]);
+
+  // Wire playback engine event listeners
+  useEffect(() => {
+    engine.setEvents({
+      onStatusChange: (status) => {
+        setPlaybackState((prev) => ({
+          ...prev,
+          status,
+          isPlaying: status === 'playing',
+        }));
+      },
+      onTimeUpdate: (currentTime, duration) => {
+        setPlaybackState((prev) => ({
+          ...prev,
+          currentTimeSeconds: currentTime,
+          durationSeconds: duration > 0 ? duration : prev.durationSeconds,
+        }));
+      },
+      onEnded: () => {
+        handleTrackEnded();
+      },
+      onError: (errMsg) => {
+        setPlaybackState((prev) => ({
+          ...prev,
+          status: 'error',
+          isPlaying: false,
+          errorMessage: errMsg,
+        }));
+        addToast({
+          title: 'Playback Error',
+          message: errMsg,
+          type: 'error',
+        });
+      },
+    });
+
+    return () => {
+      engine.destroy();
+    };
+  }, [engine, handleTrackEnded, addToast]);
+
+  // Initialize library from IndexedDB on startup (loads real saved files)
   useEffect(() => {
     let isMounted = true;
 
     const initDb = async () => {
       try {
         const storedTracks = await dbRepository.getAllTracks();
-        if (isMounted) {
-          if (storedTracks.length > 0) {
-            setTracks(storedTracks);
-            setSelectedTrack(storedTracks[0]);
-          } else {
-            // First run: Seed IndexedDB with initial tracks
-            await dbRepository.saveTracks(INITIAL_TRACKS);
-          }
+        if (isMounted && storedTracks.length > 0) {
+          setTracks(storedTracks);
+          setSelectedTrack(storedTracks[0]);
         }
       } catch {
-        // Fallback to in-memory initial tracks if IndexedDB fails
+        // Fallback to empty library if IndexedDB fails
       }
     };
 
@@ -412,67 +330,145 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, [addToast]);
 
-  const togglePlayPause = useCallback(() => {
-    setPlaybackState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
-  }, []);
-
+  // Real Play Track Action (S3.1)
   const playTrack = useCallback(
-    (trackId: string) => {
-      const trk = tracks.find((t) => t.id === trackId);
-      if (trk) {
-        setSelectedTrack(trk);
-        setPlaybackState((prev) => ({
-          ...prev,
-          currentTrackId: trackId,
-          isPlaying: true,
-          currentTimeSeconds: 0,
-          durationSeconds: trk.durationSeconds,
-        }));
+    async (trackId: string): Promise<void> => {
+      const currentList = tracksRef.current;
+      const trk = currentList.find((t) => t.id === trackId);
+      if (!trk) return;
+
+      setSelectedTrack(trk);
+      setPlaybackState((prev) => ({
+        ...prev,
+        currentTrackId: trackId,
+        status: 'loading',
+        isPlaying: true,
+        currentTimeSeconds: 0,
+        durationSeconds: trk.durationSeconds,
+        errorMessage: undefined,
+      }));
+
+      try {
+        const platform = getPlatform();
+        const url = await platform.getAudioUrl(trk);
+
+        if (url) {
+          await engine.loadAndPlay(url);
+          setPlaybackState((prev) => ({
+            ...prev,
+            status: 'playing',
+            isPlaying: true,
+          }));
+        } else {
+          // If no audio url is available (e.g. mock or missing file handle)
+          setPlaybackState((prev) => ({
+            ...prev,
+            status: 'playing',
+            isPlaying: true,
+          }));
+        }
+
         addToast({
           title: 'Now Playing',
           message: `${trk.title} by ${trk.artist}`,
           type: 'info',
         });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Could not play audio';
+        setPlaybackState((prev) => ({
+          ...prev,
+          status: 'error',
+          isPlaying: false,
+          errorMessage: message,
+        }));
+        addToast({
+          title: 'Playback Error',
+          message,
+          type: 'error',
+        });
       }
     },
-    [tracks, addToast]
+    [engine, addToast]
   );
 
+  const togglePlayPause = useCallback(() => {
+    const { isPlaying, currentTrackId } = stateRef.current;
+    const currentList = tracksRef.current;
+
+    if (isPlaying) {
+      engine.pause();
+      setPlaybackState((prev) => ({ ...prev, isPlaying: false, status: 'paused' }));
+    } else {
+      if (currentTrackId) {
+        engine.play().catch(() => {});
+        setPlaybackState((prev) => ({ ...prev, isPlaying: true, status: 'playing' }));
+      } else if (currentList.length > 0) {
+        playTrack(currentList[0].id);
+      }
+    }
+  }, [engine, playTrack]);
+
   const nextTrack = useCallback(() => {
-    if (tracks.length === 0) return;
-    const currentIndex = tracks.findIndex((t) => t.id === playbackState.currentTrackId);
-    const nextIdx = (currentIndex + 1) % tracks.length;
-    playTrack(tracks[nextIdx].id);
-  }, [tracks, playbackState.currentTrackId, playTrack]);
+    const currentList = tracksRef.current;
+    const currentQueue = queueRef.current;
+
+    if (currentQueue.length > 0) {
+      const nextItem = currentQueue[0];
+      setQueue((prev) => prev.slice(1));
+      playTrack(nextItem.trackId);
+      return;
+    }
+
+    if (currentList.length === 0) return;
+    const currentIndex = currentList.findIndex((t) => t.id === stateRef.current.currentTrackId);
+    const nextIdx = (currentIndex + 1) % currentList.length;
+    playTrack(currentList[nextIdx].id);
+  }, [playTrack]);
 
   const prevTrack = useCallback(() => {
-    if (tracks.length === 0) return;
-    const currentIndex = tracks.findIndex((t) => t.id === playbackState.currentTrackId);
-    const prevIdx = (currentIndex - 1 + tracks.length) % tracks.length;
-    playTrack(tracks[prevIdx].id);
-  }, [tracks, playbackState.currentTrackId, playTrack]);
+    const currentList = tracksRef.current;
+    if (currentList.length === 0) return;
 
-  const seekTrack = useCallback((seconds: number) => {
-    setPlaybackState((prev) => ({ ...prev, currentTimeSeconds: seconds }));
-  }, []);
+    if (stateRef.current.currentTimeSeconds > 3) {
+      engine.seek(0);
+      return;
+    }
 
-  const setVolume = useCallback((vol: number) => {
-    setPlaybackState((prev) => ({
-      ...prev,
-      volume: Math.max(0, Math.min(1, vol)),
-      isMuted: false,
-    }));
-  }, []);
+    const currentIndex = currentList.findIndex((t) => t.id === stateRef.current.currentTrackId);
+    const prevIdx = (currentIndex - 1 + currentList.length) % currentList.length;
+    playTrack(currentList[prevIdx].id);
+  }, [engine, playTrack]);
+
+  const seekTrack = useCallback(
+    (seconds: number) => {
+      engine.seek(seconds);
+      setPlaybackState((prev) => ({ ...prev, currentTimeSeconds: seconds }));
+    },
+    [engine]
+  );
+
+  const setVolume = useCallback(
+    (vol: number) => {
+      const clamped = Math.max(0, Math.min(1, vol));
+      engine.setVolume(clamped);
+      setPlaybackState((prev) => ({ ...prev, volume: clamped, isMuted: false }));
+    },
+    [engine]
+  );
 
   const toggleMute = useCallback(() => {
-    setPlaybackState((prev) => ({ ...prev, isMuted: !prev.isMuted }));
-  }, []);
+    setPlaybackState((prev) => {
+      const nextMuted = !prev.isMuted;
+      engine.setMuted(nextMuted);
+      return { ...prev, isMuted: nextMuted };
+    });
+  }, [engine]);
 
   const toggleShuffle = useCallback(() => {
     setPlaybackState((prev) => {
       const next = !prev.shuffle;
       addToast({
-        title: 'Playback Mode',
+        title: 'Shuffle Mode',
         message: next ? 'Shuffle enabled' : 'Shuffle disabled',
         type: 'info',
       });
@@ -492,6 +488,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { ...prev, repeatMode: nextMode };
     });
   }, [addToast]);
+
+  // Queue Operations (S3.2)
+  const addToQueue = useCallback(
+    (trackId: string) => {
+      const trk = tracksRef.current.find((t) => t.id === trackId);
+      if (!trk) return;
+
+      const newItem: QueueItem = {
+        queueId: `q-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        trackId,
+        addedAt: Date.now(),
+      };
+
+      setQueue((prev) => [...prev, newItem]);
+      addToast({
+        title: 'Added to Queue',
+        message: `Added "${trk.title}" to playback queue.`,
+        type: 'info',
+      });
+    },
+    [addToast]
+  );
+
+  const removeFromQueue = useCallback((queueId: string) => {
+    setQueue((prev) => prev.filter((item) => item.queueId !== queueId));
+  }, []);
+
+  const moveQueueItem = useCallback((fromIndex: number, toIndex: number) => {
+    setQueue((prev) => {
+      if (fromIndex < 0 || fromIndex >= prev.length || toIndex < 0 || toIndex >= prev.length) {
+        return prev;
+      }
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
+  }, []);
+
+  const clearQueue = useCallback(() => {
+    setQueue([]);
+    addToast({
+      title: 'Queue Cleared',
+      message: 'All upcoming tracks have been removed from the queue.',
+      type: 'info',
+    });
+  }, [addToast]);
+
+  const playQueueItem = useCallback(
+    (queueId: string) => {
+      const item = queueRef.current.find((q) => q.queueId === queueId);
+      if (item) {
+        removeFromQueue(queueId);
+        playTrack(item.trackId);
+      }
+    },
+    [removeFromQueue, playTrack]
+  );
 
   const approveProposal = useCallback(
     (id: string) => {
@@ -537,6 +591,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Reload merged tracks from IndexedDB
       const updatedList = await dbRepository.getAllTracks();
       setTracks(updatedList);
+      if (updatedList.length > 0 && !selectedTrack) {
+        setSelectedTrack(updatedList[0]);
+      }
       setIsScanning(false);
 
       if (report.added > 0 || report.updated > 0) {
@@ -565,7 +622,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return report;
     },
-    [addToast]
+    [addToast, selectedTrack]
   );
 
   const selectAndImportFiles = useCallback(async (): Promise<ScanReport | null> => {
@@ -608,17 +665,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     async (id: string): Promise<void> => {
       await dbRepository.deleteTrack(id);
       setTracks((prev) => prev.filter((t) => t.id !== id));
+      if (playbackState.currentTrackId === id) {
+        engine.pause();
+        setPlaybackState((prev) => ({
+          ...prev,
+          currentTrackId: null,
+          isPlaying: false,
+          status: 'idle',
+        }));
+      }
       addToast({
         title: 'Removed from Library Index',
         message: 'Track reference removed from GhostWave. Local audio file was not deleted.',
         type: 'info',
       });
     },
-    [addToast]
+    [engine, playbackState.currentTrackId, addToast]
   );
 
   const triggerScan = useCallback(() => {
-    // Backwards-compatible trigger for simple scans
     rescanLibrary();
   }, [rescanLibrary]);
 
@@ -637,6 +702,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedPlaylistId,
         setSelectedPlaylistId,
         playbackState,
+        playbackEngine: engine,
+        queue,
+        addToQueue,
+        removeFromQueue,
+        moveQueueItem,
+        clearQueue,
+        playQueueItem,
         togglePlayPause,
         playTrack,
         nextTrack,

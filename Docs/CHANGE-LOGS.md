@@ -6,13 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] - S3: Playback & Queue (Planned)
+## [Unreleased] - S4: Library Search and Playlists (Planned)
 
 ### Planned
-- S3.1: Playback engine with state transitions (idle, loading, playing, paused, ended, error).
-- S3.2: Queue management (reordering, shuffle, repeat, wrap-around).
-- S3.3: Playback UI integration with Web Audio graph and visualizer stream.
-- S3.4: Tests and verification.
+- S4.1: Fast offline metadata search and sorting.
+- S4.2: Playlist CRUD operations and smart crate persistence.
+- S4.3: Integration tests and playlist playback from queue.
+
+---
+
+## [0.4.0] - S3: Playback and Queue (2026-10-30)
+
+### Added
+- **S3.1: Playback Engine & Transport Core**:
+  - `src/services/playback/PlaybackEngine.ts`: Dedicated HTML5 Audio & Web Audio API transport engine handling explicit playback lifecycle states: `idle`, `loading`, `playing`, `paused`, `ended`, and `error`.
+  - Methods for `loadAndPlay`, `play`, `pause`, `seek`, `setVolume`, and `setMuted` with safe audio clamping and error handling.
+  - Exposes Web Audio `AnalyserNode` with 2048 FFT size for live visualizer frequency reactivity.
+- **S3.2: Queue Management & Interactive Drawer**:
+  - `src/components/common/QueueModal.tsx`: Real queue drawer modal supporting track reordering, removing items, clear queue, and showing now-playing indicator.
+  - `AppContext.tsx`: Integrated queue methods (`addToQueue`, `removeFromQueue`, `moveQueueItem`, `clearQueue`, `playQueueItem`) with queue count badge on bottom player.
+  - Priority auto-advance: when a track ends, the engine advances from the upcoming queue first, then falls back to library tracks or repeat loop.
+- **S3.3: Playback Modes & Accessible Player Controls**:
+  - Seamless repeat modes (`off`, `all`, `one`) and shuffle toggle with state indicators.
+  - `src/components/layout/BottomPlayer.tsx`: Connected to real engine and live queue. Clean empty state when no track is active; real scrub bar, time display, volume controls, and format badge.
+  - Safe zero-mock workflow: completely removed hardcoded placeholder tracks (`INITIAL_TRACKS`), mock issues, and mock proposals; library and playback operate entirely on real imported user files.
+- **S3.4: Tests & Verification**:
+  - `src/test/s3-playback.test.tsx`: 7 comprehensive tests covering PlaybackEngine state machine, seek/volume/mute clamping, AnalyserNode connection, queue additions/removals/clearing, and repeat/shuffle mode toggling.
+  - All 23 tests across the entire test suite passing with 0 errors.
 
 ---
 

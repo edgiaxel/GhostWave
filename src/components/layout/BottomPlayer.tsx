@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 
 function formatTime(seconds: number): string {
+  if (isNaN(seconds) || seconds <= 0) return '0:00';
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s < 10 ? '0' : ''}${s}`;
@@ -11,6 +12,7 @@ export const BottomPlayer: React.FC = () => {
   const {
     tracks,
     playbackState,
+    queue,
     togglePlayPause,
     nextTrack,
     prevTrack,
@@ -23,7 +25,7 @@ export const BottomPlayer: React.FC = () => {
     setActiveModal,
   } = useApp();
 
-  const currentTrack = tracks.find((t) => t.id === playbackState.currentTrackId) || tracks[0];
+  const currentTrack = tracks.find((t) => t.id === playbackState.currentTrackId) || null;
 
   return (
     <footer
@@ -44,9 +46,17 @@ export const BottomPlayer: React.FC = () => {
           }}
           aria-label="View track in Audio Visualizer"
         >
-          <span className="material-symbols-outlined text-2xl text-primary group-hover:scale-110 transition-transform">
-            graphic_eq
-          </span>
+          {currentTrack?.pictureDataUrl ? (
+            <img
+              src={currentTrack.pictureDataUrl}
+              alt=""
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+            />
+          ) : (
+            <span className="material-symbols-outlined text-2xl text-primary group-hover:scale-110 transition-transform">
+              graphic_eq
+            </span>
+          )}
           {playbackState.isPlaying && (
             <span className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-secondary animate-ping" />
           )}
@@ -55,11 +65,11 @@ export const BottomPlayer: React.FC = () => {
         <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold truncate tracking-tight text-on-surface">
-              {currentTrack ? currentTrack.title : 'No Track Selected'}
+              {currentTrack ? currentTrack.title : 'No track selected'}
             </span>
-            {currentTrack?.format === 'flac' && (
-              <span className="px-1 py-0.2 rounded bg-secondary/15 text-secondary font-mono text-[9px] font-bold uppercase shrink-0">
-                FLAC
+            {currentTrack?.format && (
+              <span className="px-1.5 py-0.5 rounded bg-surface-container text-secondary font-mono text-[9px] font-bold uppercase shrink-0">
+                {currentTrack.format}
               </span>
             )}
           </div>
@@ -89,7 +99,8 @@ export const BottomPlayer: React.FC = () => {
           {/* Previous Track */}
           <button
             onClick={prevTrack}
-            className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors"
+            disabled={tracks.length === 0}
+            className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors disabled:opacity-40"
             aria-label="Previous track"
             title="Previous track"
           >
@@ -99,19 +110,25 @@ export const BottomPlayer: React.FC = () => {
           {/* Play / Pause Primary Button */}
           <button
             onClick={togglePlayPause}
-            className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center hover:opacity-90 active:scale-95 transition-all shadow-md"
+            disabled={tracks.length === 0 && !currentTrack}
+            className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center hover:opacity-90 active:scale-95 transition-all shadow-md disabled:opacity-50"
             aria-label={playbackState.isPlaying ? 'Pause playback' : 'Start playback'}
             title={playbackState.isPlaying ? 'Pause (Space)' : 'Play (Space)'}
           >
             <span className="material-symbols-outlined text-2xl font-bold">
-              {playbackState.isPlaying ? 'pause' : 'play_arrow'}
+              {playbackState.status === 'loading'
+                ? 'sync'
+                : playbackState.isPlaying
+                ? 'pause'
+                : 'play_arrow'}
             </span>
           </button>
 
           {/* Next Track */}
           <button
             onClick={nextTrack}
-            className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors"
+            disabled={tracks.length === 0}
+            className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors disabled:opacity-40"
             aria-label="Next track"
             title="Next track"
           >
@@ -142,11 +159,12 @@ export const BottomPlayer: React.FC = () => {
             <input
               type="range"
               min={0}
-              max={playbackState.durationSeconds || 100}
+              max={playbackState.durationSeconds > 0 ? playbackState.durationSeconds : 100}
               value={playbackState.currentTimeSeconds}
               onChange={(e) => seekTrack(Number(e.target.value))}
+              disabled={!currentTrack}
               aria-label="Seek position in track"
-              className="w-full h-1 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
+              className="w-full h-1 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary disabled:opacity-40"
             />
           </div>
           <span className="w-9">{formatTime(playbackState.durationSeconds)}</span>
@@ -197,11 +215,16 @@ export const BottomPlayer: React.FC = () => {
         {/* Queue Drawer Button */}
         <button
           onClick={() => setActiveModal('queue-drawer')}
-          className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors"
+          className="relative p-1.5 text-on-surface-variant hover:text-on-surface transition-colors"
           title="Open Current Queue"
           aria-label="Open Playback Queue"
         >
           <span className="material-symbols-outlined text-xl">playlist_play</span>
+          {queue.length > 0 && (
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-primary text-on-primary text-[10px] font-bold font-mono">
+              {queue.length}
+            </span>
+          )}
         </button>
       </div>
     </footer>

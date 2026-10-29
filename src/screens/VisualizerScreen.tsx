@@ -2,13 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const VisualizerScreen: React.FC = () => {
-  const { playbackState, tracks, togglePlayPause } = useApp();
+  const { playbackState, tracks, playbackEngine, togglePlayPause } = useApp();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [preset, setPreset] = useState<'ghost_pulse' | 'spectral_bars' | 'waveform_rings'>('ghost_pulse');
   const [sensitivity, setSensitivity] = useState(75);
 
-  const currentTrack = tracks.find((t) => t.id === playbackState.currentTrackId) || tracks[0];
+  const currentTrack = tracks.find((t) => t.id === playbackState.currentTrackId) || tracks[0] || null;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -19,6 +19,9 @@ export const VisualizerScreen: React.FC = () => {
 
     let animationFrameId: number;
     let phase = 0;
+
+    const analyser = playbackEngine?.getAnalyser();
+    const dataArray = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
 
     const render = () => {
       if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
@@ -33,7 +36,18 @@ export const VisualizerScreen: React.FC = () => {
       ctx.fillStyle = 'rgba(18, 19, 26, 0.25)';
       ctx.fillRect(0, 0, width, height);
 
-      const ampMultiplier = playbackState.isPlaying ? sensitivity / 50 : 0.2;
+      // Real audio frequency data if analyser is active and playing
+      let realAmp = 0;
+      if (analyser && dataArray && playbackState.isPlaying) {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < 32; i++) {
+          sum += dataArray[i];
+        }
+        realAmp = (sum / 32 / 255) * (sensitivity / 50);
+      }
+
+      const ampMultiplier = playbackState.isPlaying ? Math.max(0.4, realAmp || sensitivity / 50) : 0.2;
       phase += playbackState.isPlaying ? 0.04 : 0.01;
 
       if (preset === 'ghost_pulse') {
@@ -67,12 +81,15 @@ export const VisualizerScreen: React.FC = () => {
         const barWidth = (width - numBars * 4) / numBars;
 
         for (let i = 0; i < numBars; i++) {
-          const freqHeight = (Math.sin(i * 0.3 + phase) * 0.5 + 0.5) * height * 0.55 * ampMultiplier;
+          const freqVal = dataArray && playbackState.isPlaying ? dataArray[i * 2] / 255 : 0;
+          const simulatedHeight = (Math.sin(i * 0.3 + phase) * 0.5 + 0.5) * height * 0.55 * ampMultiplier;
+          const freqHeight = freqVal > 0 ? freqVal * height * 0.7 * (sensitivity / 50) : simulatedHeight;
+
           const x = i * (barWidth + 4);
-          const y = height - freqHeight;
+          const y = height - Math.max(4, freqHeight);
 
           ctx.fillStyle = i % 2 === 0 ? '#ddb7ff' : '#60ff99';
-          ctx.fillRect(x, y, barWidth, freqHeight);
+          ctx.fillRect(x, y, barWidth, Math.max(4, freqHeight));
         }
       } else {
         ctx.beginPath();
@@ -97,7 +114,7 @@ export const VisualizerScreen: React.FC = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [playbackState.isPlaying, preset, sensitivity]);
+  }, [playbackState.isPlaying, preset, sensitivity, playbackEngine]);
 
   return (
     <div className="flex flex-col w-full gap-5 pb-6">
@@ -111,9 +128,9 @@ export const VisualizerScreen: React.FC = () => {
             </span>
           </div>
           <h1 className="font-headline font-bold text-xl text-on-surface truncate mt-0.5">
-            {currentTrack.title}{' '}
+            {currentTrack ? currentTrack.title : 'GhostWave Ambient Pulse'}{' '}
             <span className="text-on-surface-variant font-normal text-sm">
-              / {currentTrack.artist}
+              / {currentTrack ? currentTrack.artist : 'Offline Visualizer'}
             </span>
           </h1>
         </div>
@@ -148,67 +165,55 @@ export const VisualizerScreen: React.FC = () => {
                 : 'text-outline hover:text-on-surface'
             }`}
           >
-            Waveform
+            Waveform Rings
           </button>
         </div>
       </div>
 
-      {/* Main Canvas Stage */}
-      <div className="relative w-full rounded-2xl bg-surface-container-lowest border border-outline-variant/30 overflow-hidden shadow-xl min-h-[460px] h-[55vh] flex flex-col justify-between">
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full cursor-crosshair z-0" />
+      {/* Main Canvas Display */}
+      <div className="relative w-full aspect-video min-h-[380px] rounded-2xl bg-surface-container-lowest border border-outline-variant/20 overflow-hidden shadow-md flex items-center justify-center">
+        <canvas ref={canvasRef} className="w-full h-full block" />
 
-        {/* Ambient Gradient Overlays */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-surface-container-lowest via-transparent to-surface-container-lowest/60 z-10" />
+        {/* Floating Quick Action Overlay */}
+        <div className="absolute top-4 right-4 flex items-center gap-2 bg-surface-container-low/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-outline-variant/20 shadow-sm">
+          <span className="material-symbols-outlined text-outline text-sm">tune</span>
+          <span className="text-[11px] font-mono text-outline">Sensitivity</span>
+          <input
+            type="range"
+            min={10}
+            max={100}
+            value={sensitivity}
+            onChange={(e) => setSensitivity(Number(e.target.value))}
+            className="w-20 h-1 bg-surface-container-high rounded appearance-none cursor-pointer accent-primary"
+          />
+        </div>
+      </div>
 
-        {/* Floating Top Meter */}
-        <div className="relative z-20 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 bg-surface-container-low/80 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-outline-variant/20 shadow-sm">
-            <span className="material-symbols-outlined text-primary text-base">graphic_eq</span>
-            <span className="text-xs font-medium text-on-surface capitalize">
-              {preset.replace('_', ' ')}
+      {/* Minimal Playback Transport Quick Strip */}
+      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/20 shadow-sm">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={togglePlayPause}
+            className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center hover:opacity-90 active:scale-95 transition-all shadow-sm"
+            aria-label={playbackState.isPlaying ? 'Pause' : 'Play'}
+          >
+            <span className="material-symbols-outlined text-xl font-bold">
+              {playbackState.isPlaying ? 'pause' : 'play_arrow'}
             </span>
-          </div>
-
-          <div className="flex items-center gap-2 bg-surface-container-low/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-outline-variant/20 shadow-sm">
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-outline">
-              <span>Sub</span>
-              <div className="w-1.5 h-3 bg-secondary/80 rounded-full" />
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-outline">
-              <span>Bass</span>
-              <div className="w-1.5 h-3 bg-primary/80 rounded-full" />
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-outline">
-              <span>Mid</span>
-              <div className="w-1.5 h-3 bg-tertiary/80 rounded-full" />
-            </div>
+          </button>
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold text-on-surface">
+              {currentTrack ? currentTrack.title : 'Ready to Play'}
+            </span>
+            <span className="text-[11px] text-on-surface-variant">
+              {playbackState.isPlaying ? 'Audio Reactive Spectral Engine Active' : 'Transport Paused'}
+            </span>
           </div>
         </div>
 
-        {/* Clean Bottom Floating Strip */}
-        <div className="relative z-20 p-4 flex items-center justify-between bg-surface-container-lowest/70 backdrop-blur-md border-t border-outline-variant/20">
-          <div className="flex items-center gap-3 text-xs text-outline">
-            <span>Sensitivity</span>
-            <input
-              type="range"
-              min={10}
-              max={100}
-              value={sensitivity}
-              onChange={(e) => setSensitivity(Number(e.target.value))}
-              className="w-24 h-1 bg-surface-container-high rounded appearance-none cursor-pointer accent-primary"
-            />
-            <span className="font-mono text-on-surface font-semibold">{sensitivity}%</span>
-          </div>
-
-          <button
-            onClick={togglePlayPause}
-            className="px-4 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors flex items-center gap-1.5 border border-outline-variant/20"
-          >
-            <span className="material-symbols-outlined text-sm">
-              {playbackState.isPlaying ? 'pause' : 'play_arrow'}
-            </span>
-            <span>{playbackState.isPlaying ? 'Pause' : 'Play'}</span>
-          </button>
+        <div className="flex items-center gap-2 text-xs font-mono text-outline">
+          <span className="w-2 h-2 rounded-full bg-secondary" />
+          <span>Web Audio FFT 2048</span>
         </div>
       </div>
     </div>

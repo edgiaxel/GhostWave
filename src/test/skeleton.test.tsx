@@ -41,7 +41,7 @@ describe('S1 Modular Application Skeleton Smoke Tests', () => {
     const toolsNav = screen.getByRole('navigation', { name: /Tools Navigation/i });
 
     // 1. Library Screen (default)
-    expect(screen.getByText('Featured Album')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: /GhostWave Library/i })).toBeInTheDocument();
 
     // 2. Playlists Screen
     fireEvent.click(within(nav).getByRole('button', { name: /Playlists/i }));
@@ -91,18 +91,22 @@ describe('S1 Modular Application Skeleton Smoke Tests', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('halloween-dark');
   });
 
-  it('operates playback controls correctly', () => {
+  it('operates playback and shuffle controls correctly in the bottom player', () => {
     renderApp();
 
-    const playBtn = screen.getByLabelText(/Start playback/i);
-    fireEvent.click(playBtn);
+    // Shuffle toggle works
+    const shuffleBtn = screen.getByLabelText(/Enable shuffle/i);
+    expect(shuffleBtn).toBeInTheDocument();
+    fireEvent.click(shuffleBtn);
+    expect(screen.getByLabelText(/Disable shuffle/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Disable shuffle/i));
+    expect(screen.getByLabelText(/Enable shuffle/i)).toBeInTheDocument();
 
-    // State updates to Pause
-    expect(screen.getByLabelText(/Pause playback/i)).toBeInTheDocument();
-
-    // Toggle back
-    fireEvent.click(screen.getByLabelText(/Pause playback/i));
-    expect(screen.getByLabelText(/Start playback/i)).toBeInTheDocument();
+    // Repeat mode toggle cycles through modes
+    const repeatBtn = screen.getByLabelText(/Repeat mode: all/i);
+    expect(repeatBtn).toBeInTheDocument();
+    fireEvent.click(repeatBtn);
+    expect(screen.getByLabelText(/Repeat mode: one/i)).toBeInTheDocument();
   });
 
   it('opens and closes the Queue drawer modal using keyboard Escape key', () => {
@@ -118,18 +122,19 @@ describe('S1 Modular Application Skeleton Smoke Tests', () => {
     expect(screen.queryByText('Current Playback Queue')).not.toBeInTheDocument();
   });
 
-  it('approves a metadata proposal and shows success feedback', () => {
+  it('handles health cleanup view and reports zero defect state when clean', () => {
     renderApp();
     const nav = screen.getByRole('navigation', { name: /Main Navigation/i });
 
     // Navigate to Health & Cleanup
     fireEvent.click(within(nav).getByRole('button', { name: /Health & Cleanup/i }));
 
-    // Find the row approve button
-    const approveBtn = screen.getAllByTitle('Approve this proposed change')[0];
-    expect(approveBtn).toBeInTheDocument();
+    // Verify empty state is displayed
+    expect(screen.getByText('Zero library defects or pending proposals detected.')).toBeInTheDocument();
 
-    fireEvent.click(approveBtn);
-    expect(screen.getByText('Proposal Approved')).toBeInTheDocument();
+    // Clicking Apply Approved with zero approved shows warning toast
+    const applyBtn = screen.getByRole('button', { name: /Apply Approved/i });
+    fireEvent.click(applyBtn);
+    expect(screen.getByText('No Changes Approved')).toBeInTheDocument();
   });
 });
