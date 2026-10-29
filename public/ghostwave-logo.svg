@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" fill="none">
+  <path d="M24 4C14.059 4 6 12.059 6 22V40C6 41.657 7.79 42.69 9.23 41.88L13 39.75L17.77 42.41C18.53 42.84 19.47 42.84 20.23 42.41L24 40.3L27.77 42.41C28.53 42.84 29.47 42.84 30.23 42.41L35 39.75L38.77 41.88C40.21 42.69 42 41.657 42 40V22C42 12.059 33.941 4 24 4Z" fill="#a855f7" fill-opacity="0.2" stroke="#a855f7" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Audio spectrum eyes -->
+  <circle cx="17" cy="20" r="3" fill="#60ff99" />
+  <circle cx="31" cy="20" r="3" fill="#60ff99" />
+  <!-- Waveform smile -->
+  <path d="M16 29C18 32 20 33 24 33C28 33 30 32 32 29" stroke="#ffb68d" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

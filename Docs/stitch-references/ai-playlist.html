@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-primary-fixed-variant":"#6900b3","outline":"#988d9f","on-background":"#e3e1ec","tertiary":"#ffb68d","on-tertiary-fixed-variant":"#763300","on-tertiary-container":"#491d00","surface-dim":"#12131a","on-primary-fixed":"#2c0051","background":"#12131a","secondary":"#f5fff3","inverse-primary":"#842bd2","on-error":"#690005","surface-container":"#1e1f27","secondary-fixed-dim":"#00e479","surface-container-low":"#1a1b22","secondary-fixed":"#60ff99","error-container":"#93000a","inverse-on-surface":"#2f3038","on-primary-container":"#400071","surface-container-high":"#292931","on-primary":"#490080","tertiary-fixed":"#ffdbc9","on-surface-variant":"#cfc2d6","on-tertiary":"#532200","inverse-surface":"#e3e1ec","surface-variant":"#34343c","tertiary-container":"#e96c00","primary-fixed-dim":"#ddb7ff","on-tertiary-fixed":"#331200","surface-container-highest":"#34343c","primary-fixed":"#f0dbff","tertiary-fixed-dim":"#ffb68d","on-secondary-container":"#007239","surface-container-lowest":"#0d0e15","surface":"#12131a","on-secondary-fixed":"#00210c","primary-container":"#b76dff","surface-tint":"#ddb7ff","secondary-container":"#34ff8d","on-error-container":"#ffdad6","on-secondary":"#003919","outline-variant":"#4d4354","primary":"#ddb7ff","on-secondary-fixed-variant":"#005228","error":"#ffb4ab","surface-bright":"#383941","on-surface":"#e3e1ec"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"space-md":"0.75rem","space-sm":"0.5rem","space-xs":"0.25rem","space-xl":"1.5rem","margin":"1rem","gutter":"0.75rem","space-lg":"1rem"},"fontFamily":{"title-md":["Space Grotesk"],"headline-lg":["Space Grotesk"],"body-md":["Geist"],"headline-sm":["Space Grotesk"],"code-sm":["Geist"],"label-md":["Geist"],"body-sm":["Geist"],"code-xs":["Geist"],"headline-xl":["Space Grotesk"],"body-lg":["Geist"]},"fontSize":{"title-md":["1rem",{"lineHeight":"1.5rem","letterSpacing":"0em","fontWeight":"500"}],"headline-lg":["1.75rem",{"lineHeight":"2.25rem","letterSpacing":"-0.02em","fontWeight":"600"}],"body-md":["0.875rem",{"lineHeight":"1.375rem","fontWeight":"400"}],"headline-sm":["1.25rem",{"lineHeight":"1.75rem","letterSpacing":"-0.01em","fontWeight":"600"}],"code-sm":["0.75rem",{"lineHeight":"1rem","letterSpacing":"0.04em","fontWeight":"500"}],"label-md":["0.8125rem",{"lineHeight":"1.25rem","letterSpacing":"0.02em","fontWeight":"500"}],"body-sm":["0.75rem",{"lineHeight":"1.125rem","fontWeight":"400"}],"code-xs":["0.6875rem",{"lineHeight":"0.875rem","letterSpacing":"0.06em","fontWeight":"500"}],"headline-xl":["2.25rem",{"lineHeight":"2.75rem","letterSpacing":"-0.03em","fontWeight":"700"}],"body-lg":["1rem",{"lineHeight":"1.5rem","fontWeight":"400"}]}}}};</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen"><header class="fixed top-0 left-0 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.6)] z-50 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-md min-w-[260px]"><img alt="GhostWave Spooky Audio Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Xkdts20jSIZTOPggxhFeRyhV5PcmvON0aGAq2zGC9JTT64tYWc0QWOkIH_2DRxrlwIV-4m8KUpBPKJr5zjRUb2DrnRzq-HVKrH6T2R-20DsxIWkly9f87_UPdcVO3LPCrO_2_HQwPZCf5QB4BYjNzzD29UwgHnGQ-5lM5yLbEbOOyxQk8uiWa1iaHfEPDhtMbVmx0xQ037VOFNyeV7QC__-kMs90bf3U5t0QyjO-Q"/><div class="flex flex-col"><span class="font-title-md text-title-md tracking-wider text-primary uppercase">GhostWave</span><span class="font-code-xs text-code-xs text-on-surface-variant tracking-widest uppercase">Audio Lab // v0.9.4</span></div></div><div class="flex-1 max-w-xl mx-space-lg"><div class="relative flex items-center"><span class="material-symbols-outlined absolute left-space-md text-outline pointer-events-none text-lg">search</span><input class="w-full bg-surface-container-low text-on-surface placeholder:text-outline pl-10 pr-space-lg py-space-xs rounded font-body-sm text-body-sm outline-none focus:bg-surface-container transition-all" placeholder="Search local tracks, spectral tags, FLAC bitrates, ghost hashes..." type="text"/></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs px-space-sm py-space-xs rounded bg-surface-container text-secondary-fixed-dim"><span class="w-2 h-2 rounded-full bg-secondary-fixed-dim animate-pulse"></span><span class="font-code-xs text-code-xs tracking-wider uppercase font-semibold">Local Mode (Offline-Ready)</span></div><button class="flex items-center gap-space-xs px-space-sm py-space-xs rounded bg-surface-container-high hover:bg-surface-bright text-tertiary transition-colors" title="Toggle Halloween Palette"><span class="material-symbols-outlined text-base">dark_mode</span><span class="font-code-xs text-code-xs hidden lg:inline">Halloween Dark</span></button><div class="flex items-center pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-primary/40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRFRZQ9X7S1OdOqzz21J-XjyKnFSgQl8HRiWOrBgn8lTpzK5NVtZeotkNgiesyvnpv8zcn6PyIt0IQXq1kJodYqC17xO34zHR2cOX1nKipc4RaYqTEz3RWiP20URIoJXn5Uv2QMmdmaQ_drgYG6Wz52ZXK4xyELD_5t310GP2nM1Pk9EZUhcuaU91aPKmETLiq9kD0Yo4DdpBErPVwIB4B_ONOWNMFnfPc-zQXnA"/></div></div></header><aside class="fixed left-0 top-16 bottom-[76px] w-72 bg-surface-container-lowest/95 backdrop-blur-xl z-40 flex flex-col justify-between py-space-md shadow-[1px_0_12px_rgba(0,0,0,0.4)]"><div class="flex flex-col gap-space-sm px-space-sm overflow-y-auto"><div class="px-space-sm py-space-xs text-on-surface-variant font-code-xs text-code-xs uppercase tracking-widest flex items-center justify-between"><span>Deck Modules</span><span class="material-symbols-outlined text-sm">tune</span></div><nav class="flex flex-col gap-space-xs" data-active-classes="bg-surface-container-high text-primary font-semibold shadow-[inset_2px_0_0_#ddb7ff]"><a class="flex items-center gap-space-md px-space-md py-space-sm rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="library" href="#"><span class="material-symbols-outlined text-xl text-primary">library_music</span><div class="flex flex-col"><span class="font-label-md text-label-md">Library</span><span class="font-code-xs text-code-xs text-outline">Tracks, Artists, Folders</span></div></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="playlists" href="#"><span class="material-symbols-outlined text-xl text-tertiary">queue_music</span><div class="flex flex-col"><span class="font-label-md text-label-md">Playlists</span><span class="font-code-xs text-code-xs text-outline">Smart Crates &amp; AI Mixes</span></div></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="health-cleanup" href="#"><span class="material-symbols-outlined text-xl text-secondary-fixed-dim">cleaning_services</span><div class="flex flex-col"><span class="font-label-md text-label-md">Health &amp; Cleanup</span><span class="font-code-xs text-code-xs text-outline">Missing ID3 &amp; Safe Diff</span></div></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="audio-visualizer" href="#"><span class="material-symbols-outlined text-xl text-primary-fixed-dim">graphic_eq</span><div class="flex flex-col"><span class="font-label-md text-label-md">Audio Visualizer</span><span class="font-code-xs text-code-xs text-outline">Spectrogram &amp; MilkDrop</span></div></a><a aria-current="page" class="flex items-center gap-space-md px-space-md py-space-sm rounded transition-all bg-surface-container-high text-primary font-semibold shadow-[inset_2px_0_0_#ddb7ff]" data-path="local-ai-assistant" href="#"><span class="material-symbols-outlined text-xl text-tertiary-fixed">smart_toy</span><div class="flex flex-col"><span class="font-label-md text-label-md">Local AI Assistant</span><span class="font-code-xs text-code-xs text-outline">Ollama Gemma 2B Core</span></div></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="settings-platform" href="#"><span class="material-symbols-outlined text-xl text-on-surface-variant">settings</span><div class="flex flex-col"><span class="font-label-md text-label-md">Settings &amp; Platform</span><span class="font-code-xs text-code-xs text-outline">Tauri Permissions &amp; DSP</span></div></a></nav></div><div class="px-space-md pt-space-sm bg-surface-container-lowest"><div class="p-space-sm rounded bg-surface-container-low flex flex-col gap-space-xs"><div class="flex items-center justify-between text-on-surface-variant"><span class="font-code-xs text-code-xs uppercase tracking-wider">Buffer Memory</span><span class="font-code-xs text-code-xs text-secondary-fixed-dim">Optimal</span></div><div class="w-full h-1 rounded bg-surface-container-highest overflow-hidden"><div class="w-2/5 h-full bg-primary"></div></div><div class="flex justify-between font-code-xs text-code-xs text-outline pt-space-xs"><span>FLAC 24-bit/96k</span><span>Lossless IPC</span></div></div></div></aside><div class="pl-72 pb-[76px]"><main class="w-full pt-16 px-space-lg bg-surface min-h-[calc(100vh-76px)]"><div class="flex flex-col w-full pb-8">
+<div class="flex flex-col gap-space-lg">
+<!-- Section 1: Module Header & Runtime Status Deck -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container-low p-space-lg shadow-xl">
+<div class="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+<div class="absolute -left-20 -bottom-20 h-52 w-52 rounded-full bg-secondary-fixed/5 blur-2xl pointer-events-none"></div>
+<div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-sm">
+<span class="px-space-xs py-0.5 rounded bg-surface-container-high text-primary font-code-xs text-code-xs uppercase tracking-widest font-semibold">LocalAIService</span>
+<span class="text-outline font-code-xs text-code-xs">IPC Bridge: active</span>
+</div>
+<div class="flex items-baseline gap-space-sm">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">AI Assistant &amp; Smart Curation</h1>
+<span class="font-code-sm text-code-sm text-on-surface-variant font-medium hidden sm:inline">v2.4.0 (Offline-First)</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-xl">
+            Deterministic neural queries execute locally via Ollama. GhostWave parses plain English requests into schema-checked metadata filters without remote telemetry.
+          </p>
+</div>
+<!-- Connection Telemetry Badges -->
+<div class="flex flex-wrap items-center gap-space-sm bg-surface-container-lowest p-space-sm rounded-lg shadow-sm">
+<div class="flex items-center gap-space-xs px-space-sm py-space-xs bg-surface-container-low rounded">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-fixed opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-secondary-fixed-dim"></span>
+</span>
+<span class="font-code-xs text-code-xs text-secondary-fixed-dim font-medium">Localhost:11434</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-space-xs bg-surface-container-low rounded">
+<span class="material-symbols-outlined text-sm text-primary">memory</span>
+<span class="font-code-xs text-code-xs text-on-surface font-semibold">gemma2:2b</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-space-xs bg-surface-container-low rounded">
+<span class="material-symbols-outlined text-sm text-tertiary">bolt</span>
+<span class="font-code-xs text-code-xs text-tertiary font-semibold">142ms / Metal GPU</span>
+</div>
+<div class="flex items-center gap-space-xs px-space-sm py-space-xs bg-surface-container text-on-surface-variant rounded">
+<span class="material-symbols-outlined text-sm text-secondary-fixed">shield_lock</span>
+<span class="font-code-xs text-code-xs font-semibold text-secondary-fixed">Zero Cloud Sync</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Split Studio Layout (Input & Prompt Engineering + Output Pipeline) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column: Prompting Deck & Schema Filters (5 cols) -->
+<div class="xl:col-span-5 flex flex-col gap-space-lg">
+<!-- Natural Language Prompt Card -->
+<div class="bg-surface-container-low rounded-xl p-space-lg shadow-md flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-xl">auto_fix_high</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Neural Intent Parser</h2>
+</div>
+<span class="font-code-xs text-code-xs px-space-xs py-0.5 rounded bg-surface-container-high text-outline">STRICT_JSON_V2</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Describe tempo, gothic moods, obscure sub-genres, or duration constraints. Gemma compiles criteria into local SQLite queries.
+          </p>
+<!-- Input Form Box -->
+<div class="relative flex flex-col gap-space-xs">
+<textarea class="w-full bg-surface-container-lowest text-on-surface placeholder:text-outline font-body-sm text-body-sm p-space-md rounded-lg resize-none outline-none focus:bg-surface-container transition-all shadow-inner" id="ai-prompt-input" placeholder='e.g., "Create a 45-minute spooky atmospheric playlist of 80s synth and post-punk with high energy"' rows="4">Create a 45-minute spooky atmospheric playlist of 80s synth and post-punk with high energy</textarea>
+<div class="flex justify-between items-center px-space-xs text-outline font-code-xs text-code-xs">
+<span>Token budget: 64/256 tokens</span>
+<span>Temp: 0.25 (Deterministic)</span>
+</div>
+</div>
+<!-- Fast Preset Pills -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-code-xs text-code-xs text-outline uppercase tracking-wider">Inspiration Seeds</span>
+<div class="flex flex-wrap gap-space-xs">
+<button class="px-space-sm py-space-xs rounded bg-surface-container text-on-surface hover:bg-surface-container-high hover:text-primary font-body-sm text-body-sm transition-all text-left" onclick="setPrompt(this.innerText)">
+                Halloween Party Warmup (45 min)
+              </button>
+<button class="px-space-sm py-space-xs rounded bg-surface-container text-on-surface hover:bg-surface-container-high hover:text-primary font-body-sm text-body-sm transition-all text-left" onclick="setPrompt(this.innerText)">
+                Late Night Coding with Synthwave
+              </button>
+<button class="px-space-sm py-space-xs rounded bg-surface-container text-on-surface hover:bg-surface-container-high hover:text-primary font-body-sm text-body-sm transition-all text-left" onclick="setPrompt(this.innerText)">
+                Acoustic Folk Horror
+              </button>
+<button class="px-space-sm py-space-xs rounded bg-surface-container text-on-surface hover:bg-surface-container-high hover:text-primary font-body-sm text-body-sm transition-all text-left" onclick="setPrompt(this.innerText)">
+                Indonesian Rock Classics
+              </button>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-space-sm pt-space-xs">
+<button class="flex-1 flex items-center justify-center gap-space-xs bg-primary hover:bg-primary-fixed-dim text-on-primary-container font-label-md text-label-md py-space-sm px-space-md rounded-lg shadow-lg shadow-primary/20 transition-all font-semibold" id="generate-btn">
+<span class="material-symbols-outlined text-lg">smart_toy</span>
+<span>Generate Playlist Proposal</span>
+</button>
+<button class="p-space-sm bg-surface-container hover:bg-surface-container-high text-outline hover:text-on-surface rounded-lg transition-colors" title="Clear parameters">
+<span class="material-symbols-outlined text-lg">restart_alt</span>
+</button>
+</div>
+</div>
+<!-- Synthesized Filter Schema (Live Schema AST Inspector) -->
+<div class="bg-surface-container-low rounded-xl p-space-lg shadow-md flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary-fixed text-lg">verified</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Extracted Filter Schema</span>
+</div>
+<span class="font-code-xs text-code-xs text-secondary-fixed px-space-xs py-0.5 rounded bg-surface-container-lowest">Valid Schema</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Gemma JSON AST parsed into local multi-tag index constraints:
+          </p>
+<div class="grid grid-cols-2 gap-space-sm font-code-xs text-code-xs">
+<div class="bg-surface-container-lowest p-space-sm rounded flex flex-col gap-0.5">
+<span class="text-outline uppercase">Matched Genres</span>
+<span class="text-primary font-medium">post-punk, darkwave, synth-pop</span>
+</div>
+<div class="bg-surface-container-lowest p-space-sm rounded flex flex-col gap-0.5">
+<span class="text-outline uppercase">Release Era</span>
+<span class="text-on-surface font-medium">1980 - 1989</span>
+</div>
+<div class="bg-surface-container-lowest p-space-sm rounded flex flex-col gap-0.5">
+<span class="text-outline uppercase">Energy Floor / BPM</span>
+<span class="text-tertiary font-medium">High (&gt; 120 BPM, &gt; 0.7 Energy)</span>
+</div>
+<div class="bg-surface-container-lowest p-space-sm rounded flex flex-col gap-0.5">
+<span class="text-outline uppercase">Target Duration</span>
+<span class="text-secondary-fixed font-medium">45:00 (+/- 3:00 window)</span>
+</div>
+</div>
+<div class="p-space-sm bg-surface-container rounded-lg flex items-center justify-between mt-space-xs">
+<div class="flex items-center gap-space-xs text-outline">
+<span class="material-symbols-outlined text-sm">database</span>
+<span class="font-code-xs text-code-xs">Query Plan: `audio_fts5` + `spectral_tags`</span>
+</div>
+<span class="font-code-xs text-code-xs text-secondary-fixed-dim">11 Files Selected</span>
+</div>
+</div>
+<!-- Ambient Cover Visualizer Miniature (Reference inspired from mockup) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-md flex items-center gap-space-md relative overflow-hidden">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 relative shadow-md">
+<img class="w-full h-full object-cover" data-alt="Album art for a retro gothic darkwave electronic album featuring a shadowy neon silhouette against a deep purple and emerald green foggy skyline, stylized audiophile aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMfbzYIw9l-uTOES_iws2UiPM4sK_jEQMdgiW7gFL22BvTIT_XzC7PG_bVPSt31Y_kPnppoadEAZNfO8tOYv81IIvOjtS7ahUK4MPWe-EXJ9jswjsCbSsR5xNcawl9JyOYcXCqfqReb1jPBQmsMhFrp4cNLuwmOi-qCex3Sh4iEb4Rsu9HDKoWJFkFjXMcnPve_zvO6Cprw_VHhXgeU-z42zD6msZZh4sBYgprqQ"/>
+<div class="absolute inset-0 bg-primary/20 mix-blend-overlay"></div>
+</div>
+<div class="flex flex-col overflow-hidden min-w-0">
+<span class="font-code-xs text-code-xs text-tertiary uppercase tracking-wider">Atmospheric Crate</span>
+<h3 class="font-title-md text-title-md text-on-surface truncate">Spooky 80s Synth Drift</h3>
+<p class="font-body-sm text-body-sm text-outline truncate">Generated via Gemma 2B • 11 tracks • 41 min 24 sec</p>
+<div class="flex items-center gap-space-xs mt-space-xs">
+<span class="px-space-xs py-0.5 rounded bg-surface-container font-code-xs text-code-xs text-secondary-fixed-dim">FLAC Lossless (100%)</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container font-code-xs text-code-xs text-primary">24-bit / 48kHz</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Candidate Selection & Proposed Tracklist (7 cols) -->
+<div class="xl:col-span-7 flex flex-col gap-space-md">
+<!-- Header Panel with Batch Controls -->
+<div class="bg-surface-container-low rounded-xl p-space-lg shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-xl">playlist_add_check</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Candidate Track Sequence</h2>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Deterministic match from your 3,412 local files</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="px-space-sm py-space-xs bg-surface-container hover:bg-surface-container-high text-on-surface rounded-lg font-body-sm text-body-sm flex items-center gap-space-xs transition-colors" onclick="shuffleOrder()" title="Shuffle sequence">
+<span class="material-symbols-outlined text-base">shuffle</span>
+<span>Reorder</span>
+</button>
+<button class="px-space-md py-space-xs bg-secondary-container text-on-secondary-container hover:bg-secondary-fixed-dim font-label-md text-label-md rounded-lg flex items-center gap-space-xs transition-all font-semibold shadow-md" id="save-playlist-btn">
+<span class="material-symbols-outlined text-base">save</span>
+<span>Save Crate</span>
+</button>
+</div>
+</div>
+<!-- Telemetry Summary Bar -->
+<div class="grid grid-cols-3 gap-space-sm text-center">
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col">
+<span class="font-code-xs text-code-xs text-outline uppercase">Matched Runtime</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">41m 24s</span>
+<span class="font-code-xs text-code-xs text-secondary-fixed-dim">Within target (+3m 36s reserve)</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col">
+<span class="font-code-xs text-code-xs text-outline uppercase">Average Match Quality</span>
+<span class="font-title-md text-title-md text-primary font-semibold">97.4%</span>
+<span class="font-code-xs text-code-xs text-on-surface-variant">8 Perfect, 3 Probable</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col">
+<span class="font-code-xs text-code-xs text-outline uppercase">Disk Storage</span>
+<span class="font-title-md text-title-md text-tertiary font-semibold">584.2 MB</span>
+<span class="font-code-xs text-code-xs text-on-surface-variant">All paths verified on SSD</span>
+</div>
+</div>
+<!-- Track List Data Slab -->
+<div class="bg-surface-container-low rounded-xl shadow-md overflow-hidden flex flex-col">
+<!-- Table Header -->
+<div class="grid grid-cols-12 gap-space-sm px-space-md py-space-xs bg-surface-container-high/60 text-outline font-code-xs text-code-xs uppercase tracking-wider">
+<div class="col-span-1 text-center">#</div>
+<div class="col-span-6">Track &amp; Artist</div>
+<div class="col-span-2 text-right">Time</div>
+<div class="col-span-2 text-center">Confidence</div>
+<div class="col-span-1 text-right">Action</div>
+</div>
+<!-- Track Items Container -->
+<div class="flex flex-col divide-none" id="track-list">
+<!-- Item 1 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">01</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Cover artwork in dark violet and synthwave neon hues featuring Joy Division style oscilloscope waves and Bauhaus gothic typography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxTI8kofgXZUrKeGn56rwp5KEsfG_XuynuET9SnA-qoZBs797lix33JDqUXAbIXKbyqPS7uCShEO0m86HkoyqFKYeb8cliUt0qr7amEATXUWAgrOGDinf48WZk_t72dpM9oBQO2Y4rON_Og7kP185g6w1JOxZRFous-Y1S9W4uzKcxSi0Sfg37mjsWKBCl_G2uOy2H72qwN6EC53Y-EoxggAwE2XByRuD6D0qF7A"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Disorder (2007 Remaster)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Joy Division • Unknown Pleasures</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">3:32</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-secondary-fixed/15 text-secondary-fixed font-code-xs text-code-xs font-semibold">100% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center bg-surface-container-lowest/30 hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">02</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Album art of a gothic 1980s dark post-punk band with shadowy androgynous faces in front of a purple graveyard with mist" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNHXDAfKU3aQ67ZYeeRLFbFmARXkOD5RF7KC36w4t2pBLtkZHmrWGTR3Z2GQXAXs0R1Wmty1jYk0iKLAUVfpH2THyqPPwBqPj0Ssv2aGH6YUfMAE8kCHKZOy0IF8BkAkB63EV7QdnW48PQoBnzMftAFFkNej3TgIX23hPNepNXqncYJ_AtrKvhlw3Gl5Ilq2FuQ1qpES6p_jZfAADdv8u8A3DUBwHzmTtNsqETgA"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">A Forest (Tree Mix)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">The Cure • Seventeen Seconds</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">5:55</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-secondary-fixed/15 text-secondary-fixed font-code-xs text-code-xs font-semibold">100% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">03</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Dark post punk album sleeve with midnight purple and emerald geometric lines, minimalist analog synth layout" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqaVW1ldCAcAOgEcJ2LA1EICOfX9GsmmTln4TNO-_RpYtpxlOK-c7gvkgO3_avSmt92nLX3ZB4Doo47o6cIO-f7jTc22GuKtUopTob68vA7NMD6_GrwLPdPAQL9mDQkrHhPJ6YaV8pETIMWXxJZqoc7i7H8uzl-tysO25gEv2lkHLc1X3FgykDADJUCnk72_9v3I9FvvwPpCo4Lt8U18HSsAMW-38P0p4eGKZSQQ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Bela Lugosi's Dead (Tomb Session)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Bauhaus • 1979-1983 Complete</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">4:58</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-secondary-fixed/15 text-secondary-fixed font-code-xs text-code-xs font-semibold">100% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center bg-surface-container-lowest/30 hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">04</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Album visual art with a stylized skull made of purple neon cables and green analog vu meters, synth-pop dark aesthetics" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxIaV4vVyRj4Zwc1KI2T3c6q3hD8NvtWNgQPK-2Fz6PXyhVjlYvhvdMK5PYTx0b-yv4Mw6d88Q21X7tmQmO7tel2wUwP4Etz8si1RZlAK8PYYRx25Vxo7x4N20ghBg-jkphsXzwIjBX7iDhHHES_SzL64mJRyvB22b1ysnVFmt_3nri2yi_kSAwH-myuzQzmpniebJwx-DVp1nqZ2nZUYQk8xraexUuiTwn5lDiw"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Spellbound</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Siouxsie and the Banshees • Juju</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">3:19</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-secondary-fixed/15 text-secondary-fixed font-code-xs text-code-xs font-semibold">100% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">05</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Album cover depicting dark synth-pop retro cassette layout with gloomy neon magenta lighting and deep shadow vignette" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7O_tBd2Maf4sYN8F5bGy4PWNHYj2soG8mloGJDjPUSMQWnGo4tJh74g71WZkAZnFKMMWKyKXhgC6joQINHXy6xsP8FhzoCBeCx8isNNXE3xFNw7k1TuFZ-F4xcSiVvtAALHywAsSwzHzkCNbeHgV__2jqXqX--WrvuqRPN8gpyoiL-z1gHlH4OP1IcZEd6_wnrR1WEYX27iXqLDOX8O_gvLtwCB3Oid55eqXrtg"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Cities in Dust</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Siouxsie and the Banshees • Tinderbox</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">3:51</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-primary/20 text-primary-fixed-dim font-code-xs text-code-xs font-semibold">96% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 6 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center bg-surface-container-lowest/30 hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">06</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Album cover with an old industrial synthesizer in midnight gloom with neon green led diodes glowing softly" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpvkpGRGsnoELDQ8OWH0ZgHMNl6C6tbaehKEBAZpPc37_bJCMQxk7qc4VzTGYAtnjq3Sx_uXm_SRyXZYee_9lhEFBX7c5WxgthaNIiWv9MB_oygp6lWgMX093h9jKaO0NCkfstZc72VodquRJvIWzeLHpgNdk3eHRkykZ0JRE98Ct25ARP6IiyRHFl6LhTEFNaqGBJKMcrnu5QF-3G9OnQfJWwxbthfTPS-nYH4g"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Lucretia My Reflection</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">The Sisters of Mercy • Floodland</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">4:57</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-primary/20 text-primary-fixed-dim font-code-xs text-code-xs font-semibold">94% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 7 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">07</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Abstract dark wave electronic record cover with glowing violet frequency spikes and chrome typography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv7zR4n4qIAfH-9gftvUSLQB1He0Z2MwiP3zNCQ65iu-F_UCRQVMaDujAlDLDf5O0dvzM7yx7KByTxnuDwW-IqcpZuw8lMrM1ptKOxznLIoK-hseyuPDlo-I1H7mGDWn-ynu5kKr5y4mQZNxWfhh5BJ9Hd3g8Agg_QXdnoQGKFl7AYY_08X4iWCCEtRCQkJtL8z5iZe7E47VL6btkgHgf626G7lJPQ-WVMaJCZ9w"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Blue Monday (Original 12")</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">New Order • Power, Corruption &amp; Lies</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">7:29</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-primary/20 text-primary-fixed-dim font-code-xs text-code-xs font-semibold">92% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 8 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center bg-surface-container-lowest/30 hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">08</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Moody minimal post punk cover art showing a monochrome haunted street corner under a purple streetlamp" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARueGrJXny1nXCprjq-ifm5_grrAopwpca3gzXzJvFrvWgmSZgrWRQqruO7OzIbEhAzzcfBUuLJmmwx1Kgp-Ftb57zPj1bChSsZXLLnoYFq8UR-uWRAAW_CMqUhD7y9x1puUPUBQJ6maUReR-8ovUQd5L2uREnzXS-1fs1hqnzqyyWTg1wlGCQelQsZIVTo6G3MEL8mS31gbn9oLCpp2UfwbeUTIa1dHZTrHLH2w"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Transmission</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Joy Division • Substance</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">3:36</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-secondary-fixed/15 text-secondary-fixed font-code-xs text-code-xs font-semibold">100% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 9 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">09</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Cover artwork in dark electronic cyberpunk style with an analog reel-to-reel tape bathed in moody purple light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdeuQfGXWROWCnb5b-n-9CzDv5GoXv0pv3oX5NMe-_pdHaVtxZW3lFaPLiKMP7nb3T4Wfaur4U1HppxoakNOIjchp_fgo05VDh0oy-N5tkDsaJbDF9k1VAmOjajeku-nO5MgV5Qt4FtaRcJInJLgui8efZXzbWHBnvfPNPXjGaJdA8dnW37nsqbw6I34tnyTUuLyQDD4_oyEtu_GrAWZ1pouX7LNUcu4MvFa_zkQ"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Dark Entries</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Bauhaus • In The Flat Field</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">3:53</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-primary/20 text-primary-fixed-dim font-code-xs text-code-xs font-semibold">92% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 10 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center bg-surface-container-lowest/30 hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">10</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Retro synthesizer studio module faceplate with vintage green led digits and violet faders in dim studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcN3ewwXTs2rMS6DKpgwtXmaRR80_v3kxepEzUc-vZbH54ABh-hRoQlZd0jXGCEz_wo_rnHSFth-FFkHiS5FB3y7EJaS9prgKo3wHCnEJV3Bw--ytPNu94ozoxyqCnqzSXXr-sR26D9yWlL5qHw3FVcqSM00QJEkCyGY69W4kpL1lMaosqn7e0bjZ422bc7oyzknse74UKzMF3J4ZocJ6gSQ7mBrRGtLmX-CAA8Q"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">Christine</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Siouxsie and the Banshees • Kaleidoscope</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">3:01</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-secondary-fixed/15 text-secondary-fixed font-code-xs text-code-xs font-semibold">100% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+<!-- Item 11 -->
+<div class="group grid grid-cols-12 gap-space-sm px-space-md py-space-sm items-center hover:bg-surface-container transition-colors">
+<div class="col-span-1 text-center font-code-xs text-code-xs text-outline group-hover:text-primary">11</div>
+<div class="col-span-6 flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex-shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Dark gothic record artwork with foggy midnight cemetery background and glowing neon purple geometric frame" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV74seUiMMclt-L05rUOVfc03EvgFyRS3JKMN_ed0cDcXAVzCVjZB4xZWvklxiIfJN8xHUYjBNEDoMyu6pVLINnJKkvAQnFRm8WJOmuJTW_JoUrqL4eg5pqp5kEG_3PDbyvCt7-pwviLPgSE3z6lYxy1bDmX2biT3FR6rZUo6o93QrIXKrZm7rJa635DKRYmFdogKHxHv6ZiC1-0PTiLJG7tHQuBnJxN_xqRh56w"/>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate group-hover:text-primary transition-colors">This Corrosion</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">The Sisters of Mercy • Floodland</span>
+</div>
+</div>
+<div class="col-span-2 text-right font-code-xs text-code-xs text-on-surface">4:24</div>
+<div class="col-span-2 flex justify-center">
+<span class="px-space-xs py-0.5 rounded bg-primary/20 text-primary-fixed-dim font-code-xs text-code-xs font-semibold">95% Match</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button class="p-1 rounded text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="removeTrack(this)" title="Exclude track">
+<span class="material-symbols-outlined text-base">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Status of Proposed Crate -->
+<div class="px-space-md py-space-sm bg-surface-container-highest/40 flex items-center justify-between text-outline font-code-xs text-code-xs">
+<span class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed"></span>
+              All 11 tracks verified in `/Volumes/AudioArchive/Lossless/`
+            </span>
+<span>Estimated buffer preload: 32MB</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 4: AI Library Health Summary & Batch Proposal Drawer -->
+<div class="rounded-xl bg-surface-container-low p-space-lg shadow-xl relative overflow-hidden">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0 text-tertiary">
+<span class="material-symbols-outlined text-2xl">sanitizer</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-space-xs">
+<span class="font-title-md text-title-md text-on-surface font-semibold">AI Library Health Diagnostic</span>
+<span class="px-space-xs py-0.5 rounded bg-tertiary-container/30 text-tertiary font-code-xs text-code-xs font-semibold">Attention Needed</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
+              Local AI background scan detected <strong class="text-on-surface">12 files</strong> with track numbers or zero-padding embedded in title names (e.g. <span class="font-code-xs text-code-xs text-outline">"01 - Disorder.flac"</span>). Tag proposals are compiled in memory and will never touch disk without safe diff confirmation.
+            </p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm self-end lg:self-center">
+<div class="hidden sm:flex flex-col text-right font-code-xs text-code-xs text-outline pr-space-sm">
+<span>Proposed Diffs: 12 ready</span>
+<span class="text-secondary-fixed">0 destructive overwrites</span>
+</div>
+<a class="px-space-md py-space-sm bg-surface-container-high hover:bg-surface-bright text-on-surface hover:text-tertiary font-label-md text-label-md rounded-lg flex items-center gap-space-xs transition-colors shadow-sm" data-path="health-cleanup" href="#">
+<span>Review Tag Proposals in Health Deck</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Quick Micro-Diff Preview Strip -->
+<div class="mt-space-md pt-space-md grid grid-cols-1 md:grid-cols-3 gap-space-sm">
+<div class="bg-surface-container-lowest p-space-sm rounded-lg flex flex-col gap-space-xs">
+<div class="flex justify-between items-center text-outline font-code-xs text-code-xs">
+<span>File #1/12</span>
+<span class="text-error font-medium">DIRTY_TITLE_TAG</span>
+</div>
+<div class="flex flex-col font-code-xs text-code-xs">
+<span class="text-outline line-through">Title: "01 - Joy Division - Disorder"</span>
+<span class="text-secondary-fixed font-semibold">Proposed: "Disorder" (Track: 1)</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-sm rounded-lg flex flex-col gap-space-xs">
+<div class="flex justify-between items-center text-outline font-code-xs text-code-xs">
+<span>File #2/12</span>
+<span class="text-tertiary font-medium">ERA_MISMATCH</span>
+</div>
+<div class="flex flex-col font-code-xs text-code-xs">
+<span class="text-outline line-through">Year: "2014" (Remaster Date)</span>
+<span class="text-secondary-fixed font-semibold">Proposed: "1980" (Original LP Release)</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-sm rounded-lg flex flex-col gap-space-xs">
+<div class="flex justify-between items-center text-outline font-code-xs text-code-xs">
+<span>File #3/12</span>
+<span class="text-primary font-medium">ACOUSTID_HASH</span>
+</div>
+<div class="flex flex-col font-code-xs text-code-xs">
+<span class="text-outline line-through">Artist: "Unknown Artist"</span>
+<span class="text-secondary-fixed font-semibold">Proposed: "Bauhaus" (99.8% Fingerprint)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  function setPrompt(text) {
+    const promptInput = document.getElementById('ai-prompt-input');
+    if (promptInput) {
+      promptInput.value = text;
+      promptInput.focus();
+    }
+  }
+
+  function removeTrack(btn) {
+    const row = btn.closest('.group');
+    if (row) {
+      row.style.opacity = '0.3';
+      row.style.pointerEvents = 'none';
+      setTimeout(() => {
+        row.remove();
+      }, 150);
+    }
+  }
+
+  function shuffleOrder() {
+    const list = document.getElementById('track-list');
+    if (!list) return;
+    const items = Array.from(list.children);
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      list.appendChild(items[j]);
+    }
+  }
+
+  const saveBtn = document.getElementById('save-playlist-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function() {
+      const origText = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">refresh</span><span>Writing Crate...</span>';
+      setTimeout(() => {
+        saveBtn.innerHTML = '<span class="material-symbols-outlined text-base">check</span><span>Saved to Library!</span>';
+        setTimeout(() => {
+          saveBtn.innerHTML = origText;
+        }, 2000);
+      }, 600);
+    });
+  }
+
+  const generateBtn = document.getElementById('generate-btn');
+  if (generateBtn) {
+    generateBtn.addEventListener('click', function() {
+      const orig = generateBtn.innerHTML;
+      generateBtn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">sync</span><span>Inferencing Gemma 2B...</span>';
+      generateBtn.disabled = true;
+      setTimeout(() => {
+        generateBtn.innerHTML = orig;
+        generateBtn.disabled = false;
+        shuffleOrder();
+      }, 700);
+    });
+  }
+</script></main></div><footer class="fixed bottom-0 left-0 right-0 h-[76px] bg-surface-container-lowest/95 backdrop-blur-2xl z-50 flex items-center justify-between px-space-lg shadow-[0_-2px_12px_rgba(0,0,0,0.7)]"><div class="flex items-center gap-space-md min-w-[240px] max-w-[280px]"><div class="w-12 h-12 rounded bg-surface-container-high relative flex items-center justify-center overflow-hidden flex-shrink-0"><span class="material-symbols-outlined text-2xl text-primary">album</span><div class="absolute inset-0 bg-primary/10 mix-blend-overlay"></div></div><div class="flex flex-col overflow-hidden"><span class="font-title-md text-title-md text-on-surface truncate">Ghost In The Machine</span><span class="font-body-sm text-body-sm text-on-surface-variant truncate">The Police // Synchronicity Remaster</span></div><button class="text-outline hover:text-tertiary transition-colors ml-space-xs"><span class="material-symbols-outlined text-lg">favorite</span></button></div><div class="flex-1 max-w-2xl px-space-lg flex flex-col items-center gap-space-xs"><div class="flex items-center gap-space-lg"><button class="text-outline hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-xl">shuffle</span></button><button class="text-on-surface hover:text-primary transition-colors"><span class="material-symbols-outlined text-2xl">skip_previous</span></button><button class="w-9 h-9 rounded-full bg-primary hover:bg-primary-fixed-dim text-on-primary-container flex items-center justify-center transition-all shadow-[0_0_12px_rgba(221,183,255,0.4)]"><span class="material-symbols-outlined text-2xl font-bold">play_arrow</span></button><button class="text-on-surface hover:text-primary transition-colors"><span class="material-symbols-outlined text-2xl">skip_next</span></button><button class="text-outline hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-xl">repeat</span></button></div><div class="w-full flex items-center gap-space-sm"><span class="font-code-xs text-code-xs text-outline w-10 text-right">1:42</span><div class="relative flex-1 h-3 flex items-center cursor-pointer group"><div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden"><div class="w-[40%] h-full bg-primary relative"><div class="absolute right-0 top-0 bottom-0 w-2 bg-secondary-fixed shadow-[0_0_8px_#60ff99]"></div></div></div><div class="absolute left-[40%] w-2.5 h-2.5 bg-secondary-fixed rounded-full -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_6px_#60ff99]"></div></div><span class="font-code-xs text-code-xs text-outline w-10">4:18</span></div></div><div class="flex items-center gap-space-md min-w-[240px] justify-end"><button class="text-outline hover:text-primary-fixed transition-colors" title="Visualizer Peek"><span class="material-symbols-outlined text-xl">query_stats</span></button><button class="text-outline hover:text-primary-fixed transition-colors" title="Play Queue Drawer"><span class="material-symbols-outlined text-xl">queue_music</span></button><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-lg text-outline">volume_up</span><div class="w-20 h-1 bg-surface-container-highest rounded-full overflow-hidden cursor-pointer"><div class="w-[65%] h-full bg-outline hover:bg-primary transition-colors"></div></div></div><button class="text-outline hover:text-on-surface transition-colors" title="DSP Audio Rig"><span class="material-symbols-outlined text-lg">equalizer</span></button></div></footer></body></html>

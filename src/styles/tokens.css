@@ -1,0 +1,103 @@
+:root {
+  /* Default: Halloween Dark Theme */
+  --color-surface: #12131a;
+  --color-surface-dim: #12131a;
+  --color-surface-bright: #383941;
+  --color-surface-container-lowest: #0d0e15;
+  --color-surface-container-low: #1a1b22;
+  --color-surface-container: #1e1f27;
+  --color-surface-container-high: #292931;
+  --color-surface-container-highest: #34343c;
+  --color-on-surface: #e3e1ec;
+  --color-on-surface-variant: #cfc2d6;
+  --color-outline: #988d9f;
+  --color-outline-variant: #4d4354;
+
+  --color-primary: #ddb7ff;
+  --color-primary-container: #b76dff;
+  --color-on-primary: #490080;
+  --color-on-primary-container: #400071;
+  --color-primary-fixed: #f0dbff;
+  --color-primary-fixed-dim: #ddb7ff;
+
+  --color-secondary: #f5fff3;
+  --color-secondary-container: #34ff8d;
+  --color-on-secondary: #003919;
+  --color-secondary-fixed: #60ff99;
+  --color-secondary-fixed-dim: #00e479;
+
+  --color-tertiary: #ffb68d;
+  --color-tertiary-container: #e96c00;
+  --color-on-tertiary: #532200;
+  --color-tertiary-fixed: #ffdbc9;
+  --color-tertiary-fixed-dim: #ffb68d;
+
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-on-error: #690005;
+}
+
+html.light,
+html[data-theme="halloween-light"] {
+  /* Halloween Light Theme */
+  --color-surface: #f7f6fb;
+  --color-surface-dim: #dedbe6;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f1eef8;
+  --color-surface-container: #ebe7f3;
+  --color-surface-container-high: #e3dfed;
+  --color-surface-container-highest: #dad5e6;
+  --color-on-surface: #1a1a24;
+  --color-on-surface-variant: #4a4654;
+  --color-outline: #787385;
+  --color-outline-variant: #cac4d4;
+
+  --color-primary: #7026b9;
+  --color-primary-container: #e9d5ff;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #2b0051;
+  --color-primary-fixed: #2b0051;
+  --color-primary-fixed-dim: #551590;
+
+  --color-secondary: #007a3e;
+  --color-secondary-container: #a7f3d0;
+  --color-on-secondary: #ffffff;
+  --color-secondary-fixed: #004d25;
+  --color-secondary-fixed-dim: #006331;
+
+  --color-tertiary: #a84300;
+  --color-tertiary-container: #fed7aa;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-fixed: #682700;
+  --color-tertiary-fixed-dim: #843200;
+
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+}
+
+/* Custom Accent Palettes */
+html[data-accent="pumpkin-orange"] {
+  --color-primary: #ff8c42;
+  --color-primary-container: #e65100;
+  --color-primary-fixed-dim: #ffa266;
+}
+
+html[data-accent="spectral-green"] {
+  --color-primary: #00e479;
+  --color-primary-container: #00a854;
+  --color-primary-fixed-dim: #43f39d;
+}
+
+html[data-accent="witch-violet"] {
+  --color-primary: #ddb7ff;
+  --color-primary-container: #b76dff;
+  --color-primary-fixed-dim: #c58eff;
+}
+
+html[data-accent="blood-moon-red"] {
+  --color-primary: #ff6b6b;
+  --color-primary-container: #c92a2a;
+  --color-primary-fixed-dim: #ff8787;
+}
