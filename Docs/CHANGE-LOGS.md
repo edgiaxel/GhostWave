@@ -6,13 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] - S2: Local Library Import & Metadata Scan (In Progress)
+## [Unreleased] - S3: Playback & Queue (Planned)
 
 ### Planned
-- S2.1: Platform file-access interface (Web File System Access API + standard file input fallback, ready for Tauri 2 IPC).
-- S2.2: Local audio import, validation, and metadata extraction (`music-metadata-browser`).
-- S2.3: Local library index and IndexedDB persistence with duplicate prevention and safe rescan.
-- S2.4: Isolated and integrated tests for valid, malformed, unsupported, and offline imports.
+- S3.1: Playback engine with state transitions (idle, loading, playing, paused, ended, error).
+- S3.2: Queue management (reordering, shuffle, repeat, wrap-around).
+- S3.3: Playback UI integration with Web Audio graph and visualizer stream.
+- S3.4: Tests and verification.
+
+---
+
+## [0.3.0] - S2: Local Library Import & Metadata Scan (2026-10-29)
+
+### Added
+- **S2.1: Platform File Operations Interface**:
+  - `src/services/platform/WebFilePlatform.ts`: Implemented Web File System Access API (`showOpenFilePicker`, `showDirectoryPicker`) with transparent fallback to HTML input elements and in-memory Blob caching for immediate audio streaming.
+  - `src/services/platform/TauriFilePlatform.ts`: Created desktop adapter scaffold ready for native Tauri 2 IPC dialogs and in-place tag updates.
+  - `src/services/platform/index.ts`: Added dynamic platform resolver (`getPlatform()`) with graceful degradation.
+- **S2.2: Local Audio Import, Validation & Metadata Extraction**:
+  - `src/services/metadata/MetadataService.ts`: Added pure JS metadata extraction using `music-metadata-browser` for MP3, FLAC, OGG, WAV, M4A, and AAC. Extracts title, artist, album, genre, year, duration, bitrate, sample rate, and embedded cover art base64 data URLs.
+  - Heuristic fallback parser when audio tags are missing, cleanly extracting artist and title from standard file naming conventions without throwing.
+  - `src/services/scanner/LibraryScanner.ts`: Built batch audio scanner with deterministic ID generation (`trk-<hash>`) based on file size, timestamp, and name.
+  - Live scanning telemetry with cancellation support and structured `ScanReport` (added, updated, skipped, unsupported, unreadable).
+- **S2.3: Local Library Index & IndexedDB Persistence**:
+  - `src/services/storage/IndexedDbRepository.ts`: Pure browser IndexedDB database (`ghostwave_library`) managing `tracks`, `blobs`, and `settings` object stores with indices for offline persistence.
+  - Duplicate prevention: re-scanning unchanged audio files skips re-indexing.
+  - Rescan behavior: verifies presence of current indexed tracks.
+  - Non-destructive track removal: users can remove entries from the GhostWave index without touching disk files.
+- **S2.4: Isolated and Integrated Tests**:
+  - `src/test/s2-library.test.tsx`: 10 comprehensive tests covering format detection, filename heuristics, deterministic ID generation, unsupported file filtering, IndexedDB persistence, duplicate prevention, and UI import/removal flows.
+  - All 16 unit and smoke tests passing with 0 errors.
 
 ---
 

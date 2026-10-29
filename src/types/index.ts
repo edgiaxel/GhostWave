@@ -143,3 +143,40 @@ export type AppRoute =
   | 'history'
   | 'settings-platform'
   | 'unknown';
+
+/**
+ * Abstract platform interface for file operations (S2.1).
+ */
+export interface FileOperationsPlatform {
+  isDesktop(): boolean;
+  selectAudioFiles(): Promise<File[]>;
+  selectFolder(): Promise<File[]>;
+  getAudioUrl(track: Track): Promise<string>;
+  revokeAudioUrl(url: string): void;
+  canWriteMetadata(): boolean;
+  renameFile?(oldPath: string, newPath: string): Promise<OperationResult<string>>;
+  writeMetadata?(track: Track, updates: Partial<Track>): Promise<OperationResult<boolean>>;
+}
+
+/**
+ * Scanning state and progress telemetry (S2.2).
+ */
+export interface ScanProgress {
+  scanned: number;
+  total: number;
+  currentFile: string;
+  isScanning: boolean;
+}
+
+/**
+ * Detailed report after a library import/scan completes (S2.2).
+ */
+export interface ScanReport {
+  added: number;
+  updated: number;
+  skipped: number;
+  unsupported: number;
+  unreadable: number;
+  tracks: Track[];
+  errors: Array<{ fileName: string; reason: string }>;
+}

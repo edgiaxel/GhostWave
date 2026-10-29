@@ -102,29 +102,29 @@ Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, and STAGES.md.
 **Goal:** Import supported local files and build a trustworthy library index.
 
 ### S2.1: Platform file-access interface
-- [ ] Define an interface for file selection, reading, metadata writing, and path operations.
-- [ ] Implement the web-supported path without claiming unrestricted folder access.
-- [ ] Implement the Tauri path behind the same interface when desktop setup is available.
-- [ ] Handle permission denial and unsupported capabilities.
+- [x] Define an interface for file selection, reading, metadata writing, and path operations (`FileOperationsPlatform`).
+- [x] Implement the web-supported path without claiming unrestricted folder access (`WebFilePlatform` with Web File System Access API & input fallback).
+- [x] Implement the Tauri path behind the same interface when desktop setup is available (`TauriFilePlatform`).
+- [x] Handle permission denial and unsupported capabilities cleanly.
 
 ### S2.2: Import and scan
-- [ ] Import selected audio files or a supported folder selection.
-- [ ] Validate file type and report unsupported files.
-- [ ] Extract available metadata and duration.
-- [ ] Display progress and allow safe cancellation.
-- [ ] Handle malformed files and partial scan failures.
+- [x] Import selected audio files or a supported folder selection.
+- [x] Validate file type and report unsupported files (`LibraryScanner.isSupportedAudioFile`).
+- [x] Extract available metadata, duration, bitrate, and embedded cover art (`MetadataService` with `music-metadata-browser`).
+- [x] Display progress with filename and percentage, allowing safe cancellation.
+- [x] Handle malformed files, missing tags, and partial scan failures with clean fallbacks.
 
 ### S2.3: Library index and persistence
-- [ ] Persist the library index and settings locally.
-- [ ] Avoid storing duplicate records when a file is rescanned.
-- [ ] Provide rescan and remove-from-index behavior.
-- [ ] Distinguish removing a library entry from deleting a file.
+- [x] Persist the library index and settings locally via IndexedDB (`IndexedDbRepository`).
+- [x] Avoid storing duplicate records when a file is rescanned using deterministic track IDs.
+- [x] Provide rescan and remove-from-index behavior.
+- [x] Distinguish removing a library entry from deleting a file.
 
 ### S2.4: Isolated and integrated tests
-- [ ] Test valid, malformed, unsupported, and empty imports.
-- [ ] Test rescanning and duplicate import prevention.
-- [ ] Integrate with Library screen and shared Track types.
-- [ ] Confirm core browsing works offline.
+- [x] Test valid, malformed, unsupported, and empty imports (`src/test/s2-library.test.tsx`).
+- [x] Test rescanning and duplicate import prevention.
+- [x] Integrate with Library screen and shared Track types.
+- [x] Confirm core browsing works offline.
 
 **Exit gate:** A user can import a test collection, inspect extracted metadata, rescan it safely, and recover from bad files without crashing.
 

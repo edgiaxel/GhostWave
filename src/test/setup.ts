@@ -1,4 +1,16 @@
 import '@testing-library/jest-dom';
+import 'fake-indexeddb/auto';
+
+// Mock URL.createObjectURL and URL.revokeObjectURL for Vitest/jsdom
+if (typeof URL.createObjectURL === 'undefined') {
+  URL.createObjectURL = (_blob: Blob | MediaSource): string => {
+    return `blob:http://localhost:5173/${Math.random().toString(36).substring(2, 9)}`;
+  };
+}
+
+if (typeof URL.revokeObjectURL === 'undefined') {
+  URL.revokeObjectURL = (): void => {};
+}
 
 // Mock requestAnimationFrame & cancelAnimationFrame for Vitest/jsdom
 global.requestAnimationFrame = (callback: FrameRequestCallback): number => {

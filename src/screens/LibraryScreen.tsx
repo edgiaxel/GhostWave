@@ -9,6 +9,9 @@ export const LibraryScreen: React.FC = () => {
     searchQuery,
     isScanning,
     scanProgress,
+    scanProgressPercent,
+    rescanLibrary,
+    removeTrackFromLibrary,
     setActiveModal,
   } = useApp();
 
@@ -52,20 +55,29 @@ export const LibraryScreen: React.FC = () => {
 
           <div className="flex flex-col gap-1">
             <h1 className="font-headline font-bold text-2xl sm:text-3xl text-on-surface tracking-tight">
-              {featuredTrack ? featuredTrack.title : 'Ghost In The Machine'}
+              {featuredTrack ? featuredTrack.title : 'GhostWave Library'}
             </h1>
             <p className="text-sm text-on-surface-variant font-medium">
-              {featuredTrack ? featuredTrack.artist : 'The Police'}
+              {featuredTrack ? `${featuredTrack.artist} • ${featuredTrack.album}` : 'Ready to import local audio'}
             </p>
           </div>
 
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-2.5 mt-2 flex-wrap justify-center md:justify-start">
+            {featuredTrack && (
+              <button
+                onClick={() => playTrack(featuredTrack.id)}
+                className="px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-base">play_arrow</span>
+                <span>Play Now</span>
+              </button>
+            )}
             <button
-              onClick={() => featuredTrack && playTrack(featuredTrack.id)}
-              className="px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-2"
+              onClick={() => setActiveModal('add-files')}
+              className="px-4 py-2.5 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium transition-colors border border-outline-variant/30 flex items-center gap-1.5"
             >
-              <span className="material-symbols-outlined text-base">play_arrow</span>
-              <span>Play Now</span>
+              <span className="material-symbols-outlined text-sm text-primary">add</span>
+              <span>Add Files</span>
             </button>
             <button
               onClick={() => setActiveModal('scan-folder')}
@@ -74,17 +86,36 @@ export const LibraryScreen: React.FC = () => {
               <span className="material-symbols-outlined text-sm text-tertiary">folder_open</span>
               <span>Scan Folder</span>
             </button>
+            <button
+              onClick={() => rescanLibrary()}
+              disabled={isScanning}
+              className="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-bright text-outline hover:text-on-surface transition-colors border border-outline-variant/30 flex items-center justify-center disabled:opacity-40"
+              title="Rescan library files"
+              aria-label="Rescan library files"
+            >
+              <span className={`material-symbols-outlined text-base ${isScanning ? 'animate-spin' : ''}`}>
+                sync
+              </span>
+            </button>
           </div>
         </div>
 
         {/* Featured Artwork Display */}
         <div className="relative z-10 shrink-0 w-36 h-36 sm:w-44 sm:h-44 rounded-2xl bg-surface-container-high border border-outline-variant/30 flex items-center justify-center shadow-lg overflow-hidden group">
-          <span className="material-symbols-outlined text-6xl text-primary/70 group-hover:scale-110 transition-transform">
-            graphic_eq
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end p-2.5">
+          {featuredTrack?.pictureDataUrl ? (
+            <img
+              src={featuredTrack.pictureDataUrl}
+              alt={featuredTrack.album || featuredTrack.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+            />
+          ) : (
+            <span className="material-symbols-outlined text-6xl text-primary/70 group-hover:scale-110 transition-transform">
+              graphic_eq
+            </span>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-2.5">
             <span className="text-[11px] font-mono text-white/90 truncate">
-              {featuredTrack?.album}
+              {featuredTrack?.album || 'Local Collection'}
             </span>
           </div>
         </div>
@@ -92,18 +123,22 @@ export const LibraryScreen: React.FC = () => {
 
       {/* Progress banner during active scanning */}
       {isScanning && (
-        <div className="p-3.5 rounded-xl bg-surface-container border border-primary/30 flex flex-col gap-1.5 shadow-sm animate-in fade-in">
+        <div className="p-4 rounded-2xl bg-surface-container border border-primary/40 flex flex-col gap-2 shadow-sm animate-in fade-in">
           <div className="flex items-center justify-between text-xs text-on-surface font-medium">
-            <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-secondary animate-ping" />
-              <span>Scanning audio files...</span>
+            <span className="flex items-center gap-2 truncate">
+              <span className="w-2 h-2 rounded-full bg-secondary animate-ping shrink-0" />
+              <span className="truncate">
+                Scanning: <span className="font-mono text-outline">{scanProgress.currentFile || 'Verifying local index...'}</span>
+              </span>
             </span>
-            <span className="font-mono text-primary font-semibold">{scanProgress}%</span>
+            <span className="font-mono text-primary font-semibold ml-2 shrink-0">
+              {scanProgressPercent}% ({scanProgress.scanned}/{scanProgress.total})
+            </span>
           </div>
-          <div className="w-full h-1 bg-surface-container-lowest rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
             <div
               className="h-full bg-primary transition-all duration-300 rounded-full"
-              style={{ width: `${scanProgress}%` }}
+              style={{ width: `${scanProgressPercent}%` }}
             />
           </div>
         </div>
@@ -121,7 +156,7 @@ export const LibraryScreen: React.FC = () => {
                 : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
             }`}
           >
-            All Tracks
+            All Tracks ({tracks.length})
           </button>
           <button
             onClick={() => setActiveFilterPill('flac')}
@@ -190,8 +225,19 @@ export const LibraryScreen: React.FC = () => {
           <span className="material-symbols-outlined text-4xl text-outline">music_off</span>
           <h2 className="font-headline font-semibold text-base text-on-surface">No tracks found</h2>
           <p className="text-xs text-on-surface-variant max-w-sm">
-            Try adjusting your search query or importing audio files.
+            {tracks.length === 0
+              ? 'Your library index is empty. Import audio files or scan a folder to get started.'
+              : 'No tracks match your current filter or search criteria.'}
           </p>
+          {tracks.length === 0 && (
+            <button
+              onClick={() => setActiveModal('add-files')}
+              className="mt-2 px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-base">add</span>
+              <span>Import Audio Files</span>
+            </button>
+          )}
         </div>
       ) : viewMode === 'table' ? (
         <div className="bg-surface-container-low border border-outline-variant/20 rounded-2xl overflow-hidden shadow-sm">
@@ -203,7 +249,7 @@ export const LibraryScreen: React.FC = () => {
                 <th className="py-3 px-4 hidden md:table-cell">Album</th>
                 <th className="py-3 px-4 hidden sm:table-cell">Format</th>
                 <th className="py-3 px-4 text-right">Time</th>
-                <th className="py-3 px-4 w-16 text-center">Play</th>
+                <th className="py-3 px-4 w-24 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
@@ -213,7 +259,7 @@ export const LibraryScreen: React.FC = () => {
                   <tr
                     key={track.id}
                     onClick={() => playTrack(track.id)}
-                    className={`hover:bg-surface-container/50 transition-colors cursor-pointer ${
+                    className={`hover:bg-surface-container/50 transition-colors cursor-pointer group ${
                       isPlaying ? 'bg-primary/5' : ''
                     }`}
                   >
@@ -227,17 +273,30 @@ export const LibraryScreen: React.FC = () => {
                       )}
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="flex flex-col min-w-0">
-                        <span
-                          className={`font-medium truncate ${
-                            isPlaying ? 'text-primary font-semibold' : 'text-on-surface'
-                          }`}
-                        >
-                          {track.title}
-                        </span>
-                        <span className="text-[11px] text-on-surface-variant truncate">
-                          {track.artist}
-                        </span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        {track.pictureDataUrl ? (
+                          <img
+                            src={track.pictureDataUrl}
+                            alt=""
+                            className="w-8 h-8 rounded-lg object-cover shrink-0 border border-outline-variant/20"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-outline">
+                            <span className="material-symbols-outlined text-base">music_note</span>
+                          </div>
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span
+                            className={`font-medium truncate ${
+                              isPlaying ? 'text-primary font-semibold' : 'text-on-surface'
+                            }`}
+                          >
+                            {track.title}
+                          </span>
+                          <span className="text-[11px] text-on-surface-variant truncate">
+                            {track.artist}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="py-3.5 px-4 hidden md:table-cell text-on-surface-variant truncate max-w-[200px]">
@@ -253,19 +312,32 @@ export const LibraryScreen: React.FC = () => {
                       {(track.durationSeconds % 60).toString().padStart(2, '0')}
                     </td>
                     <td className="py-3.5 px-4 text-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          playTrack(track.id);
-                        }}
-                        className="w-7 h-7 rounded-full hover:bg-surface-container text-outline hover:text-primary flex items-center justify-center transition-colors mx-auto"
-                        aria-label={`Play ${track.title}`}
-                        title={`Play ${track.title}`}
-                      >
-                        <span className="material-symbols-outlined text-base">
-                          {isPlaying ? 'pause' : 'play_arrow'}
-                        </span>
-                      </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playTrack(track.id);
+                          }}
+                          className="w-7 h-7 rounded-full hover:bg-surface-container text-outline hover:text-primary flex items-center justify-center transition-colors"
+                          aria-label={`Play ${track.title}`}
+                          title={`Play ${track.title}`}
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            {isPlaying ? 'pause' : 'play_arrow'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeTrackFromLibrary(track.id);
+                          }}
+                          className="w-7 h-7 rounded-full hover:bg-surface-container text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          aria-label={`Remove ${track.title} from library index`}
+                          title="Remove from GhostWave library index"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -274,7 +346,7 @@ export const LibraryScreen: React.FC = () => {
           </table>
         </div>
       ) : (
-        /* Grid of Album Cards (Inspired by Reference Images) */
+        /* Grid of Album Cards */
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {filteredTracks.map((track) => (
             <div
@@ -283,9 +355,17 @@ export const LibraryScreen: React.FC = () => {
               className="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/20 hover:border-primary/40 transition-all cursor-pointer flex flex-col gap-2.5 group"
             >
               <div className="w-full aspect-square rounded-xl bg-surface-container flex items-center justify-center relative overflow-hidden shadow-sm">
-                <span className="material-symbols-outlined text-4xl text-outline/60 group-hover:scale-110 transition-transform">
-                  album
-                </span>
+                {track.pictureDataUrl ? (
+                  <img
+                    src={track.pictureDataUrl}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <span className="material-symbols-outlined text-4xl text-outline/60 group-hover:scale-110 transition-transform">
+                    album
+                  </span>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

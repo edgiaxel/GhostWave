@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Track,
   Playlist,
@@ -7,7 +7,12 @@ import {
   MetadataProposal,
   AppSettings,
   AppRoute,
+  ScanProgress,
+  ScanReport,
 } from '../types';
+import { dbRepository } from '../services/storage/IndexedDbRepository';
+import { getPlatform, WebFilePlatform } from '../services/platform';
+import { LibraryScanner } from '../services/scanner/LibraryScanner';
 
 export interface ToastMessage {
   id: string;
@@ -45,8 +50,14 @@ interface AppContextType {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   isScanning: boolean;
-  scanProgress: number;
+  scanProgress: ScanProgress;
+  scanProgressPercent: number;
   triggerScan: () => void;
+  importAudioFiles: (files: File[]) => Promise<ScanReport>;
+  selectAndImportFiles: () => Promise<ScanReport | null>;
+  selectAndImportFolder: () => Promise<ScanReport | null>;
+  rescanLibrary: () => Promise<ScanReport>;
+  removeTrackFromLibrary: (id: string) => Promise<void>;
   toasts: ToastMessage[];
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
@@ -294,7 +305,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_SETTINGS;
   });
 
-  const [tracks] = useState<Track[]>(INITIAL_TRACKS);
+  const [tracks, setTracks] = useState<Track[]>(INITIAL_TRACKS);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(INITIAL_TRACKS[0]);
   const [playlists] = useState<Playlist[]>(INITIAL_PLAYLISTS);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -302,7 +313,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [metadataProposals, setMetadataProposals] = useState<MetadataProposal[]>(INITIAL_PROPOSALS);
   const [searchQuery, setSearchQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [scanProgress, setScanProgress] = useState(0);
+  const [scanProgress, setScanProgress] = useState<ScanProgress>({
+    scanned: 0,
+    total: 0,
+    currentFile: '',
+    isScanning: false,
+  });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
@@ -316,6 +332,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     repeatMode: 'all',
     shuffle: false,
   });
+
+  // Calculate percentage for progress bars
+  const scanProgressPercent = useMemo(() => {
+    if (scanProgress.total === 0) return 0;
+    return Math.min(100, Math.round((scanProgress.scanned / scanProgress.total) * 100));
+  }, [scanProgress]);
+
+  const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    setToasts((prev) => [...prev, { ...toast, id }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Initialize library from IndexedDB on startup
+  useEffect(() => {
+    let isMounted = true;
+
+    const initDb = async () => {
+      try {
+        const storedTracks = await dbRepository.getAllTracks();
+        if (isMounted) {
+          if (storedTracks.length > 0) {
+            setTracks(storedTracks);
+            setSelectedTrack(storedTracks[0]);
+          } else {
+            // First run: Seed IndexedDB with initial tracks
+            await dbRepository.saveTracks(INITIAL_TRACKS);
+          }
+        }
+      } catch {
+        // Fallback to in-memory initial tracks if IndexedDB fails
+      }
+    };
+
+    initDb();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Apply theme & accent to DOM documentElement
   useEffect(() => {
@@ -331,145 +393,234 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     root.setAttribute('data-accent', settings.accentPalette);
     localStorage.setItem('ghostwave_settings', JSON.stringify(settings));
+    dbRepository.saveSettings(settings).catch(() => {});
   }, [settings]);
 
-  const updateSettings = (updates: Partial<AppSettings>) => {
+  const updateSettings = useCallback((updates: Partial<AppSettings>) => {
     setSettings((prev) => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const toggleTheme = () => {
-    updateSettings({
-      theme: settings.theme === 'halloween-dark' ? 'halloween-light' : 'halloween-dark',
-    });
-    addToast({
-      title: 'Theme Changed',
-      message: `Active palette: ${
-        settings.theme === 'halloween-dark' ? 'Halloween Light' : 'Halloween Dark'
-      }`,
-      type: 'info',
-    });
-  };
-
-  const togglePlayPause = () => {
-    setPlaybackState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
-  };
-
-  const playTrack = (trackId: string) => {
-    const trk = tracks.find((t) => t.id === trackId);
-    if (trk) {
-      setSelectedTrack(trk);
-      setPlaybackState((prev) => ({
-        ...prev,
-        currentTrackId: trackId,
-        isPlaying: true,
-        currentTimeSeconds: 0,
-        durationSeconds: trk.durationSeconds,
-      }));
+  const toggleTheme = useCallback(() => {
+    setSettings((prev) => {
+      const nextTheme = prev.theme === 'halloween-dark' ? 'halloween-light' : 'halloween-dark';
       addToast({
-        title: 'Now Playing',
-        message: `${trk.title} by ${trk.artist}`,
+        title: 'Theme Changed',
+        message: `Active palette: ${nextTheme === 'halloween-dark' ? 'Halloween Dark' : 'Halloween Light'}`,
         type: 'info',
       });
-    }
-  };
+      return { ...prev, theme: nextTheme };
+    });
+  }, [addToast]);
 
-  const nextTrack = () => {
+  const togglePlayPause = useCallback(() => {
+    setPlaybackState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
+  }, []);
+
+  const playTrack = useCallback(
+    (trackId: string) => {
+      const trk = tracks.find((t) => t.id === trackId);
+      if (trk) {
+        setSelectedTrack(trk);
+        setPlaybackState((prev) => ({
+          ...prev,
+          currentTrackId: trackId,
+          isPlaying: true,
+          currentTimeSeconds: 0,
+          durationSeconds: trk.durationSeconds,
+        }));
+        addToast({
+          title: 'Now Playing',
+          message: `${trk.title} by ${trk.artist}`,
+          type: 'info',
+        });
+      }
+    },
+    [tracks, addToast]
+  );
+
+  const nextTrack = useCallback(() => {
+    if (tracks.length === 0) return;
     const currentIndex = tracks.findIndex((t) => t.id === playbackState.currentTrackId);
     const nextIdx = (currentIndex + 1) % tracks.length;
     playTrack(tracks[nextIdx].id);
-  };
+  }, [tracks, playbackState.currentTrackId, playTrack]);
 
-  const prevTrack = () => {
+  const prevTrack = useCallback(() => {
+    if (tracks.length === 0) return;
     const currentIndex = tracks.findIndex((t) => t.id === playbackState.currentTrackId);
     const prevIdx = (currentIndex - 1 + tracks.length) % tracks.length;
     playTrack(tracks[prevIdx].id);
-  };
+  }, [tracks, playbackState.currentTrackId, playTrack]);
 
-  const seekTrack = (seconds: number) => {
+  const seekTrack = useCallback((seconds: number) => {
     setPlaybackState((prev) => ({ ...prev, currentTimeSeconds: seconds }));
-  };
+  }, []);
 
-  const setVolume = (vol: number) => {
-    setPlaybackState((prev) => ({ ...prev, volume: Math.max(0, Math.min(1, vol)), isMuted: false }));
-  };
+  const setVolume = useCallback((vol: number) => {
+    setPlaybackState((prev) => ({
+      ...prev,
+      volume: Math.max(0, Math.min(1, vol)),
+      isMuted: false,
+    }));
+  }, []);
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     setPlaybackState((prev) => ({ ...prev, isMuted: !prev.isMuted }));
-  };
+  }, []);
 
-  const toggleShuffle = () => {
-    setPlaybackState((prev) => ({ ...prev, shuffle: !prev.shuffle }));
-    addToast({
-      title: 'Playback Mode',
-      message: playbackState.shuffle ? 'Shuffle disabled' : 'Shuffle enabled',
-      type: 'info',
-    });
-  };
-
-  const toggleRepeat = () => {
-    const modes: PlaybackState['repeatMode'][] = ['off', 'all', 'one'];
-    const nextMode = modes[(modes.indexOf(playbackState.repeatMode) + 1) % modes.length];
-    setPlaybackState((prev) => ({ ...prev, repeatMode: nextMode }));
-    addToast({
-      title: 'Repeat Mode',
-      message: `Repeat set to ${nextMode}`,
-      type: 'info',
-    });
-  };
-
-  const approveProposal = (id: string) => {
-    setMetadataProposals((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'approved' } : p))
-    );
-    addToast({
-      title: 'Proposal Approved',
-      message: 'Pending tag modification approved for application.',
-      type: 'success',
-    });
-  };
-
-  const rejectProposal = (id: string) => {
-    setMetadataProposals((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'rejected' } : p))
-    );
-    addToast({
-      title: 'Proposal Rejected',
-      message: 'Proposed change rejected.',
-      type: 'info',
-    });
-  };
-
-  const triggerScan = () => {
-    setIsScanning(true);
-    setScanProgress(10);
-    const interval = setInterval(() => {
-      setScanProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsScanning(false);
-          addToast({
-            title: 'Scan Complete',
-            message: 'All 1,428 local files verified and indexed.',
-            type: 'success',
-          });
-          return 100;
-        }
-        return prev + 25;
+  const toggleShuffle = useCallback(() => {
+    setPlaybackState((prev) => {
+      const next = !prev.shuffle;
+      addToast({
+        title: 'Playback Mode',
+        message: next ? 'Shuffle enabled' : 'Shuffle disabled',
+        type: 'info',
       });
-    }, 400);
-  };
+      return { ...prev, shuffle: next };
+    });
+  }, [addToast]);
 
-  const addToast = (toast: Omit<ToastMessage, 'id'>) => {
-    const id = `toast-${Date.now()}-${Math.random()}`;
-    setToasts((prev) => [...prev, { ...toast, id }]);
-    setTimeout(() => {
-      removeToast(id);
-    }, 4000);
-  };
+  const toggleRepeat = useCallback(() => {
+    const modes: PlaybackState['repeatMode'][] = ['off', 'all', 'one'];
+    setPlaybackState((prev) => {
+      const nextMode = modes[(modes.indexOf(prev.repeatMode) + 1) % modes.length];
+      addToast({
+        title: 'Repeat Mode',
+        message: `Repeat set to ${nextMode}`,
+        type: 'info',
+      });
+      return { ...prev, repeatMode: nextMode };
+    });
+  }, [addToast]);
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  const approveProposal = useCallback(
+    (id: string) => {
+      setMetadataProposals((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: 'approved' } : p))
+      );
+      addToast({
+        title: 'Proposal Approved',
+        message: 'Pending tag modification approved for application.',
+        type: 'success',
+      });
+    },
+    [addToast]
+  );
+
+  const rejectProposal = useCallback(
+    (id: string) => {
+      setMetadataProposals((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: 'rejected' } : p))
+      );
+      addToast({
+        title: 'Proposal Rejected',
+        message: 'Proposed change rejected.',
+        type: 'info',
+      });
+    },
+    [addToast]
+  );
+
+  /**
+   * S2 Core: Import files with progress tracking, tag extraction, and duplicate handling.
+   */
+  const importAudioFiles = useCallback(
+    async (files: File[]): Promise<ScanReport> => {
+      setIsScanning(true);
+      const platform = getPlatform() as WebFilePlatform;
+      const scanner = new LibraryScanner(dbRepository, platform);
+
+      const report = await scanner.scanFiles(files, (progress) => {
+        setScanProgress(progress);
+      });
+
+      // Reload merged tracks from IndexedDB
+      const updatedList = await dbRepository.getAllTracks();
+      setTracks(updatedList);
+      setIsScanning(false);
+
+      if (report.added > 0 || report.updated > 0) {
+        addToast({
+          title: 'Import Complete',
+          message: `Indexed ${report.added} new track${report.added === 1 ? '' : 's'}${
+            report.updated > 0 ? ` and updated ${report.updated}` : ''
+          }.`,
+          type: 'success',
+        });
+      } else if (report.unsupported > 0 && report.added === 0) {
+        addToast({
+          title: 'No Audio Files Found',
+          message: `Skipped ${report.unsupported} unsupported non-audio file${
+            report.unsupported === 1 ? '' : 's'
+          }.`,
+          type: 'warning',
+        });
+      } else {
+        addToast({
+          title: 'Scan Finished',
+          message: 'All selected files already exist in your local library index.',
+          type: 'info',
+        });
+      }
+
+      return report;
+    },
+    [addToast]
+  );
+
+  const selectAndImportFiles = useCallback(async (): Promise<ScanReport | null> => {
+    const platform = getPlatform();
+    const files = await platform.selectAudioFiles();
+    if (files.length === 0) return null;
+    return importAudioFiles(files);
+  }, [importAudioFiles]);
+
+  const selectAndImportFolder = useCallback(async (): Promise<ScanReport | null> => {
+    const platform = getPlatform();
+    const files = await platform.selectFolder();
+    if (files.length === 0) return null;
+    return importAudioFiles(files);
+  }, [importAudioFiles]);
+
+  const rescanLibrary = useCallback(async (): Promise<ScanReport> => {
+    setIsScanning(true);
+    const platform = getPlatform() as WebFilePlatform;
+    const scanner = new LibraryScanner(dbRepository, platform);
+
+    const report = await scanner.rescanLibrary(tracks, (progress) => {
+      setScanProgress(progress);
+    });
+
+    const updatedList = await dbRepository.getAllTracks();
+    setTracks(updatedList);
+    setIsScanning(false);
+
+    addToast({
+      title: 'Library Rescan Complete',
+      message: `Verified ${updatedList.length} local library entries.`,
+      type: 'info',
+    });
+
+    return report;
+  }, [tracks, addToast]);
+
+  const removeTrackFromLibrary = useCallback(
+    async (id: string): Promise<void> => {
+      await dbRepository.deleteTrack(id);
+      setTracks((prev) => prev.filter((t) => t.id !== id));
+      addToast({
+        title: 'Removed from Library Index',
+        message: 'Track reference removed from GhostWave. Local audio file was not deleted.',
+        type: 'info',
+      });
+    },
+    [addToast]
+  );
+
+  const triggerScan = useCallback(() => {
+    // Backwards-compatible trigger for simple scans
+    rescanLibrary();
+  }, [rescanLibrary]);
 
   return (
     <AppContext.Provider
@@ -503,7 +654,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSearchQuery,
         isScanning,
         scanProgress,
+        scanProgressPercent,
         triggerScan,
+        importAudioFiles,
+        selectAndImportFiles,
+        selectAndImportFolder,
+        rescanLibrary,
+        removeTrackFromLibrary,
         toasts,
         addToast,
         removeToast,
