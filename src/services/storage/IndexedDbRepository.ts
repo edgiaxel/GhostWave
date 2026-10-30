@@ -1,10 +1,11 @@
-import { Track, AppSettings } from '../../types';
+import { Track, AppSettings, Playlist } from '../../types';
 
 const DB_NAME = 'ghostwave_library';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const TRACKS_STORE = 'tracks';
 const BLOBS_STORE = 'blobs';
 const SETTINGS_STORE = 'settings';
+const PLAYLISTS_STORE = 'playlists';
 
 export class IndexedDbRepository {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -37,6 +38,12 @@ export class IndexedDbRepository {
 
         if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
           db.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
+        }
+
+        if (!db.objectStoreNames.contains(PLAYLISTS_STORE)) {
+          const playlistStore = db.createObjectStore(PLAYLISTS_STORE, { keyPath: 'id' });
+          playlistStore.createIndex('name', 'name', { unique: false });
+          playlistStore.createIndex('updatedAt', 'updatedAt', { unique: false });
         }
       };
 
@@ -102,6 +109,10 @@ export class IndexedDbRepository {
     });
   }
 
+  async saveTrack(track: Track): Promise<void> {
+    return this.saveTracks([track]);
+  }
+
   async deleteTrack(id: string): Promise<void> {
     const db = await this.openDatabase();
 
@@ -122,9 +133,77 @@ export class IndexedDbRepository {
     const db = await this.openDatabase();
 
     return new Promise<void>((resolve, reject) => {
-      const tx = db.transaction([TRACKS_STORE, BLOBS_STORE], 'readwrite');
+      const stores = [TRACKS_STORE, BLOBS_STORE];
+      if (db.objectStoreNames.contains(PLAYLISTS_STORE)) {
+        stores.push(PLAYLISTS_STORE);
+      }
+      const tx = db.transaction(stores, 'readwrite');
       tx.objectStore(TRACKS_STORE).clear();
       tx.objectStore(BLOBS_STORE).clear();
+      if (db.objectStoreNames.contains(PLAYLISTS_STORE)) {
+        tx.objectStore(PLAYLISTS_STORE).clear();
+      }
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async getAllPlaylists(): Promise<Playlist[]> {
+    try {
+      const db = await this.openDatabase();
+      if (!db.objectStoreNames.contains(PLAYLISTS_STORE)) return [];
+      return new Promise<Playlist[]>((resolve, reject) => {
+        const tx = db.transaction(PLAYLISTS_STORE, 'readonly');
+        const store = tx.objectStore(PLAYLISTS_STORE);
+        const req = store.getAll();
+
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async getPlaylistById(id: string): Promise<Playlist | null> {
+    try {
+      const db = await this.openDatabase();
+      if (!db.objectStoreNames.contains(PLAYLISTS_STORE)) return null;
+      return new Promise<Playlist | null>((resolve, reject) => {
+        const tx = db.transaction(PLAYLISTS_STORE, 'readonly');
+        const store = tx.objectStore(PLAYLISTS_STORE);
+        const req = store.get(id);
+
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async savePlaylist(playlist: Playlist): Promise<void> {
+    const db = await this.openDatabase();
+
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(PLAYLISTS_STORE, 'readwrite');
+      const store = tx.objectStore(PLAYLISTS_STORE);
+      store.put(playlist);
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
+  async deletePlaylist(id: string): Promise<void> {
+    const db = await this.openDatabase();
+
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(PLAYLISTS_STORE, 'readwrite');
+      const store = tx.objectStore(PLAYLISTS_STORE);
+      store.delete(id);
 
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);

@@ -98,6 +98,13 @@ export class LibraryScanner {
         this.platform.storeFileInMemory(trackId, file);
       }
 
+      // Persist audio blob in IndexedDB for offline persistence
+      try {
+        await this.repository.saveAudioBlob(trackId, file);
+      } catch {
+        // Continue if IndexedDB blob write fails
+      }
+
       try {
         const track = await MetadataService.extractMetadata(file, trackId);
 

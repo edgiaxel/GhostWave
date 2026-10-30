@@ -51,6 +51,7 @@ export interface Playlist {
   updatedAt: number;
   isAiGenerated?: boolean;
   icon?: string;
+  accentColor?: string;
 }
 
 /**
@@ -123,14 +124,26 @@ export interface AppSettings {
     lookupAlbumArt: boolean;
   };
   visualizer: {
-    preset: 'spectral_bars' | 'ghost_pulse' | 'waveform_rings';
+    preset: 'spectral_bars' | 'ghost_pulse' | 'waveform_rings' | 'pumpkin_pulse';
     sensitivity: number;
     colorCycle: boolean;
+    halloweenMotifs?: boolean;
+  };
+  layout: {
+    headerHeight: number;
+    sidebarWidth: number;
+    bottomPlayerHeight: number;
   };
   library: {
     autoScanOnStartup: boolean;
     renamePattern: string;
   };
+}
+
+export interface LayoutSizes {
+  headerHeight: number;
+  sidebarWidth: number;
+  bottomPlayerHeight: number;
 }
 
 /**

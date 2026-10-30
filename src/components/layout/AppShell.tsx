@@ -6,13 +6,17 @@ import { BottomPlayer } from './BottomPlayer';
 import { ToastContainer } from '../common/ToastContainer';
 import { QueueModal } from '../common/QueueModal';
 import { ScanModal } from '../common/ScanModal';
+import { AddToPlaylistModal } from '../common/AddToPlaylistModal';
+import { MetadataEditModal } from '../common/MetadataEditModal';
+
+import { NowPlayingDrawer } from '../common/NowPlayingDrawer';
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
-  const { togglePlayPause, nextTrack, prevTrack } = useApp();
+  const { togglePlayPause, nextTrack, prevTrack, layout } = useApp();
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -40,21 +44,33 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   }, [togglePlayPause, nextTrack, prevTrack]);
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface flex flex-col font-body">
+    <div className="h-screen w-screen overflow-hidden bg-surface text-on-surface flex flex-col font-body relative">
       <Header />
       <Sidebar />
 
-      {/* Main Content Area */}
-      <div className="pl-60 pt-16 pb-[76px] min-h-screen flex flex-col">
-        <main className="flex-1 w-full p-4 sm:p-6 lg:p-7 flex flex-col max-w-7xl mx-auto">
+      {/* Main Content Area: fixed viewport bounds with independent scrolling */}
+      <div
+        style={{
+          top: `${layout.headerHeight}px`,
+          bottom: `${layout.bottomPlayerHeight}px`,
+          left: `${layout.sidebarWidth}px`,
+        }}
+        className="fixed right-0 overflow-y-auto flex flex-col transition-all duration-75"
+      >
+        <main className="flex-1 w-full p-4 sm:p-6 lg:p-7 flex flex-col max-w-7xl mx-auto pb-10">
           {children}
         </main>
       </div>
+
+      {/* Slide-Up Audio Visualizer & Queue Drawer */}
+      <NowPlayingDrawer />
 
       <BottomPlayer />
       <ToastContainer />
       <QueueModal />
       <ScanModal />
+      <AddToPlaylistModal />
+      <MetadataEditModal />
     </div>
   );
 };

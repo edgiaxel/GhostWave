@@ -50,7 +50,7 @@ export class PlaybackEngine {
     });
 
     this.audio.addEventListener('canplay', () => {
-      if (this.currentStatus === 'loading') {
+      if (this.currentStatus === 'loading' && !this.audio?.paused) {
         this.setStatus('playing');
       }
     });
@@ -59,13 +59,13 @@ export class PlaybackEngine {
       if (!this.audio) return;
       const cur = this.audio.currentTime || 0;
       const dur = this.audio.duration || 0;
-      this.events.onTimeUpdate?.(cur, isNaN(dur) ? 0 : dur);
+      this.events.onTimeUpdate?.(cur, isNaN(dur) || !isFinite(dur) ? 0 : dur);
     });
 
     this.audio.addEventListener('loadedmetadata', () => {
       if (!this.audio) return;
       const dur = this.audio.duration || 0;
-      this.events.onTimeUpdate?.(this.audio.currentTime || 0, isNaN(dur) ? 0 : dur);
+      this.events.onTimeUpdate?.(this.audio.currentTime || 0, isNaN(dur) || !isFinite(dur) ? 0 : dur);
     });
 
     this.audio.addEventListener('ended', () => {
@@ -97,7 +97,7 @@ export class PlaybackEngine {
 
   getDuration(): number {
     const dur = this.audio?.duration;
-    return dur && !isNaN(dur) ? dur : 0;
+    return dur && !isNaN(dur) && isFinite(dur) ? dur : 0;
   }
 
   /**
@@ -135,12 +135,30 @@ export class PlaybackEngine {
   }
 
   async loadAndPlay(url: string, startTime = 0): Promise<void> {
+    if (!this.audio) {
+      this.initAudioElement();
+    }
     if (!this.audio) return;
 
     this.setStatus('loading');
     this.currentUrl = url;
-    this.audio.src = url;
-    this.audio.currentTime = startTime;
+    if (this.audio.src !== url) {
+      this.audio.src = url;
+    }
+
+    if (startTime > 0) {
+      try {
+        this.audio.currentTime = startTime;
+      } catch {
+        const onLoaded = () => {
+          if (this.audio) {
+            this.audio.currentTime = startTime;
+            this.audio.removeEventListener('loadedmetadata', onLoaded);
+          }
+        };
+        this.audio.addEventListener('loadedmetadata', onLoaded);
+      }
+    }
 
     // Resume AudioContext if suspended
     if (this.audioContext && this.audioContext.state === 'suspended') {
@@ -165,6 +183,9 @@ export class PlaybackEngine {
   }
 
   async play(): Promise<void> {
+    if (!this.audio) {
+      this.initAudioElement();
+    }
     if (!this.audio) return;
     if (!this.audio.src && this.currentUrl) {
       this.audio.src = this.currentUrl;
@@ -197,9 +218,14 @@ export class PlaybackEngine {
 
   seek(seconds: number): void {
     if (!this.audio) return;
-    const target = Math.max(0, Math.min(seconds, this.getDuration() || seconds));
-    this.audio.currentTime = target;
-    this.events.onTimeUpdate?.(target, this.getDuration());
+    const dur = this.getDuration();
+    const target = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
+    try {
+      this.audio.currentTime = target;
+    } catch {
+      // Pass through
+    }
+    this.events.onTimeUpdate?.(target, dur);
   }
 
   setVolume(volume: number): void {

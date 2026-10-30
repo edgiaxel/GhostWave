@@ -10,11 +10,15 @@ import {
   QueueItem,
   ScanProgress,
   ScanReport,
+  OperationResult,
+  LayoutSizes,
 } from '../types';
 import { dbRepository } from '../services/storage/IndexedDbRepository';
 import { getPlatform, WebFilePlatform } from '../services/platform';
 import { LibraryScanner } from '../services/scanner/LibraryScanner';
 import { PlaybackEngine } from '../services/playback/PlaybackEngine';
+import { LibraryHealthService } from '../services/health/LibraryHealthService';
+import { MetadataEditService } from '../services/health/MetadataEditService';
 
 export interface ToastMessage {
   id: string;
@@ -29,12 +33,27 @@ interface AppContextType {
   settings: AppSettings;
   updateSettings: (updates: Partial<AppSettings>) => void;
   toggleTheme: () => void;
+  layout: LayoutSizes;
+  updateLayout: (updates: Partial<LayoutSizes>) => void;
+  isVisualizerOpen: boolean;
+  setIsVisualizerOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  toggleVisualizer: () => void;
+  playFromLibrary: (trackId: string, trackList?: Track[]) => Promise<void>;
   tracks: Track[];
   selectedTrack: Track | null;
   setSelectedTrack: (track: Track | null) => void;
   playlists: Playlist[];
   selectedPlaylistId: string | null;
   setSelectedPlaylistId: (id: string | null) => void;
+  createPlaylist: (name: string, description?: string, icon?: string, accentColor?: string) => Promise<Playlist>;
+  updatePlaylist: (id: string, updates: Partial<Omit<Playlist, 'id' | 'createdAt'>>) => Promise<void>;
+  deletePlaylist: (id: string) => Promise<void>;
+  addTrackToPlaylist: (playlistId: string, trackId: string) => Promise<void>;
+  removeTrackFromPlaylist: (playlistId: string, trackId: string) => Promise<void>;
+  reorderPlaylistTracks: (playlistId: string, fromIndex: number, toIndex: number) => Promise<void>;
+  playPlaylist: (playlistId: string, startTrackId?: string) => Promise<void>;
+  playlistModalTrack: Track | null;
+  setPlaylistModalTrack: (track: Track | null) => void;
   playbackState: PlaybackState;
   playbackEngine: PlaybackEngine;
   queue: QueueItem[];
@@ -56,6 +75,12 @@ interface AppContextType {
   metadataProposals: MetadataProposal[];
   approveProposal: (id: string) => void;
   rejectProposal: (id: string) => void;
+  applyApprovedProposals: () => Promise<OperationResult<{ applied: number; failed: number }>>;
+  updateTrackMetadata: (trackId: string, updates: Partial<Track>) => Promise<OperationResult<Track>>;
+  applyRenameTemplate: (template: string, trackIds?: string[]) => Promise<OperationResult<{ renamed: number; failed: number }>>;
+  runHealthCheck: () => void;
+  editTrackModal: Track | null;
+  setEditTrackModal: (track: Track | null) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   isScanning: boolean;
@@ -92,6 +117,12 @@ const INITIAL_SETTINGS: AppSettings = {
     preset: 'ghost_pulse',
     sensitivity: 75,
     colorCycle: true,
+    halloweenMotifs: true,
+  },
+  layout: {
+    headerHeight: 64,
+    sidebarWidth: 240,
+    bottomPlayerHeight: 76,
   },
   library: {
     autoScanOnStartup: false,
@@ -115,13 +146,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_SETTINGS;
   });
 
+  // Resizable fixed layout sizing (Header, Sidebar, BottomPlayer) with limits
+  const [layout, setLayout] = useState<LayoutSizes>(() => {
+    const saved = localStorage.getItem('ghostwave_layout_sizes');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          headerHeight: Math.max(52, Math.min(84, parsed.headerHeight || 64)),
+          sidebarWidth: Math.max(180, Math.min(380, parsed.sidebarWidth || 240)),
+          bottomPlayerHeight: Math.max(68, Math.min(120, parsed.bottomPlayerHeight || 76)),
+        };
+      } catch {
+        // Fallback to default
+      }
+    }
+    return {
+      headerHeight: 64,
+      sidebarWidth: 240,
+      bottomPlayerHeight: 76,
+    };
+  });
+
+  const updateLayout = useCallback((updates: Partial<LayoutSizes>) => {
+    setLayout((prev) => {
+      const next: LayoutSizes = {
+        headerHeight: updates.headerHeight !== undefined
+          ? Math.max(52, Math.min(84, Math.round(updates.headerHeight)))
+          : prev.headerHeight,
+        sidebarWidth: updates.sidebarWidth !== undefined
+          ? Math.max(180, Math.min(380, Math.round(updates.sidebarWidth)))
+          : prev.sidebarWidth,
+        bottomPlayerHeight: updates.bottomPlayerHeight !== undefined
+          ? Math.max(68, Math.min(120, Math.round(updates.bottomPlayerHeight)))
+          : prev.bottomPlayerHeight,
+      };
+      localStorage.setItem('ghostwave_layout_sizes', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // Now Playing & Audio Visualizer slide-up drawer state
+  const [isVisualizerOpen, setIsVisualizerOpen] = useState(false);
+  const toggleVisualizer = useCallback(() => {
+    setIsVisualizerOpen((prev) => !prev);
+  }, []);
+
+  const handleSetRoute = useCallback((newRoute: AppRoute) => {
+    setRoute(newRoute);
+  }, []);
+
   // Real data state (starts empty until user imports files)
   const [tracks, setTracks] = useState<Track[]>([]);
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
-  const [playlists] = useState<Playlist[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
-  const [libraryIssues] = useState<LibraryIssue[]>([]);
+  const [playlistModalTrack, setPlaylistModalTrack] = useState<Track | null>(null);
+  const [libraryIssues, setLibraryIssues] = useState<LibraryIssue[]>([]);
   const [metadataProposals, setMetadataProposals] = useState<MetadataProposal[]>([]);
+  const [editTrackModal, setEditTrackModal] = useState<Track | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
@@ -248,7 +331,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setPlaybackState((prev) => ({
           ...prev,
           currentTimeSeconds: currentTime,
-          durationSeconds: duration > 0 ? duration : prev.durationSeconds,
+          durationSeconds: duration > 0 && !isNaN(duration) && isFinite(duration) ? duration : prev.durationSeconds,
         }));
       },
       onEnded: () => {
@@ -270,7 +353,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => {
-      engine.destroy();
+      engine.setEvents({});
     };
   }, [engine, handleTrackEnded, addToast]);
 
@@ -284,6 +367,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (isMounted && storedTracks.length > 0) {
           setTracks(storedTracks);
           setSelectedTrack(storedTracks[0]);
+        }
+        const storedPlaylists = await dbRepository.getAllPlaylists();
+        if (isMounted && storedPlaylists.length > 0) {
+          setPlaylists(storedPlaylists);
+          setSelectedPlaylistId(storedPlaylists[0].id);
         }
       } catch {
         // Fallback to empty library if IndexedDB fails
@@ -359,20 +447,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             status: 'playing',
             isPlaying: true,
           }));
+          addToast({
+            title: 'Now Playing',
+            message: `${trk.title} by ${trk.artist}`,
+            type: 'info',
+          });
         } else {
-          // If no audio url is available (e.g. mock or missing file handle)
           setPlaybackState((prev) => ({
             ...prev,
-            status: 'playing',
-            isPlaying: true,
+            status: 'error',
+            isPlaying: false,
+            errorMessage: `Audio file for "${trk.title}" is missing or unreadable.`,
           }));
+          addToast({
+            title: 'File Unavailable',
+            message: `Could not load audio for "${trk.title}". Please re-import this file.`,
+            type: 'error',
+          });
         }
-
-        addToast({
-          title: 'Now Playing',
-          message: `${trk.title} by ${trk.artist}`,
-          type: 'info',
-        });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Could not play audio';
         setPlaybackState((prev) => ({
@@ -391,6 +483,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [engine, addToast]
   );
 
+  const playFromLibrary = useCallback(
+    async (trackId: string, trackList?: Track[]): Promise<void> => {
+      const list = trackList && trackList.length > 0 ? trackList : tracksRef.current;
+      const startIdx = list.findIndex((t) => t.id === trackId);
+      if (startIdx === -1) {
+        await playTrack(trackId);
+        return;
+      }
+
+      // Remaining tracks following this one become the playback queue
+      const upcoming = list.slice(startIdx + 1);
+      const newQueue: QueueItem[] = upcoming.map((t, idx) => ({
+        queueId: `q-lib-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+        trackId: t.id,
+        addedAt: Date.now() + idx,
+      }));
+
+      setQueue(newQueue);
+      await playTrack(trackId);
+    },
+    [playTrack]
+  );
+
   const togglePlayPause = useCallback(() => {
     const { isPlaying, currentTrackId } = stateRef.current;
     const currentList = tracksRef.current;
@@ -400,8 +515,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setPlaybackState((prev) => ({ ...prev, isPlaying: false, status: 'paused' }));
     } else {
       if (currentTrackId) {
-        engine.play().catch(() => {});
-        setPlaybackState((prev) => ({ ...prev, isPlaying: true, status: 'playing' }));
+        if (engine.getStatus() === 'paused' || engine.getCurrentTime() > 0) {
+          engine.play().catch(() => {});
+          setPlaybackState((prev) => ({ ...prev, isPlaying: true, status: 'playing' }));
+        } else {
+          playTrack(currentTrackId);
+        }
       } else if (currentList.length > 0) {
         playTrack(currentList[0].id);
       }
@@ -547,6 +666,200 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [removeFromQueue, playTrack]
   );
 
+  // Playlist Operations (S4.2 & S4.3)
+  const createPlaylist = useCallback(
+    async (name: string, description?: string, icon?: string, accentColor?: string): Promise<Playlist> => {
+      const trimmed = name.trim();
+      const newPlaylist: Playlist = {
+        id: `pl-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        name: trimmed || 'Untitled Crate',
+        description: description?.trim() || '',
+        icon: icon || 'queue_music',
+        accentColor: accentColor || 'witch-violet',
+        trackIds: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await dbRepository.savePlaylist(newPlaylist);
+      setPlaylists((prev) => [newPlaylist, ...prev]);
+      setSelectedPlaylistId(newPlaylist.id);
+
+      addToast({
+        title: 'Playlist Created',
+        message: `Created playlist "${newPlaylist.name}".`,
+        type: 'success',
+      });
+
+      return newPlaylist;
+    },
+    [addToast]
+  );
+
+  const updatePlaylist = useCallback(
+    async (id: string, updates: Partial<Omit<Playlist, 'id' | 'createdAt'>>): Promise<void> => {
+      let updatedPlaylist: Playlist | null = null;
+      setPlaylists((prev) =>
+        prev.map((pl) => {
+          if (pl.id === id) {
+            updatedPlaylist = {
+              ...pl,
+              ...updates,
+              updatedAt: Date.now(),
+            };
+            return updatedPlaylist;
+          }
+          return pl;
+        })
+      );
+
+      if (updatedPlaylist) {
+        await dbRepository.savePlaylist(updatedPlaylist);
+        addToast({
+          title: 'Playlist Updated',
+          message: 'Changes saved successfully.',
+          type: 'success',
+        });
+      }
+    },
+    [addToast]
+  );
+
+  const deletePlaylist = useCallback(
+    async (id: string): Promise<void> => {
+      const pl = playlists.find((p) => p.id === id);
+      await dbRepository.deletePlaylist(id);
+      setPlaylists((prev) => prev.filter((p) => p.id !== id));
+      if (selectedPlaylistId === id) {
+        const remaining = playlists.filter((p) => p.id !== id);
+        setSelectedPlaylistId(remaining.length > 0 ? remaining[0].id : null);
+      }
+      addToast({
+        title: 'Playlist Deleted',
+        message: pl ? `Deleted "${pl.name}".` : 'Playlist deleted.',
+        type: 'info',
+      });
+    },
+    [playlists, selectedPlaylistId, addToast]
+  );
+
+  const addTrackToPlaylist = useCallback(
+    async (playlistId: string, trackId: string): Promise<void> => {
+      const pl = playlists.find((p) => p.id === playlistId);
+      const trk = tracks.find((t) => t.id === trackId);
+      if (!pl || !trk) return;
+
+      if (pl.trackIds.includes(trackId)) {
+        addToast({
+          title: 'Track Already In Playlist',
+          message: `"${trk.title}" is already in "${pl.name}".`,
+          type: 'warning',
+        });
+        return;
+      }
+
+      const updated: Playlist = {
+        ...pl,
+        trackIds: [...pl.trackIds, trackId],
+        updatedAt: Date.now(),
+      };
+
+      await dbRepository.savePlaylist(updated);
+      setPlaylists((prev) => prev.map((p) => (p.id === playlistId ? updated : p)));
+      addToast({
+        title: 'Added to Playlist',
+        message: `Added "${trk.title}" to "${pl.name}".`,
+        type: 'success',
+      });
+    },
+    [playlists, tracks, addToast]
+  );
+
+  const removeTrackFromPlaylist = useCallback(
+    async (playlistId: string, trackId: string): Promise<void> => {
+      const pl = playlists.find((p) => p.id === playlistId);
+      if (!pl) return;
+
+      const updated: Playlist = {
+        ...pl,
+        trackIds: pl.trackIds.filter((tid) => tid !== trackId),
+        updatedAt: Date.now(),
+      };
+
+      await dbRepository.savePlaylist(updated);
+      setPlaylists((prev) => prev.map((p) => (p.id === playlistId ? updated : p)));
+      addToast({
+        title: 'Track Removed',
+        message: 'Removed track from playlist.',
+        type: 'info',
+      });
+    },
+    [playlists, addToast]
+  );
+
+  const reorderPlaylistTracks = useCallback(
+    async (playlistId: string, fromIndex: number, toIndex: number): Promise<void> => {
+      const pl = playlists.find((p) => p.id === playlistId);
+      if (!pl) return;
+      if (fromIndex < 0 || fromIndex >= pl.trackIds.length || toIndex < 0 || toIndex >= pl.trackIds.length) {
+        return;
+      }
+
+      const newTrackIds = [...pl.trackIds];
+      const [moved] = newTrackIds.splice(fromIndex, 1);
+      newTrackIds.splice(toIndex, 0, moved);
+
+      const updated: Playlist = {
+        ...pl,
+        trackIds: newTrackIds,
+        updatedAt: Date.now(),
+      };
+
+      await dbRepository.savePlaylist(updated);
+      setPlaylists((prev) => prev.map((p) => (p.id === playlistId ? updated : p)));
+    },
+    [playlists]
+  );
+
+  const playPlaylist = useCallback(
+    async (playlistId: string, startTrackId?: string): Promise<void> => {
+      const pl = playlists.find((p) => p.id === playlistId);
+      if (!pl) return;
+
+      // Filter against valid tracks in library (safe preservation)
+      const validTrackIds = pl.trackIds.filter((tid) => tracks.some((t) => t.id === tid));
+      if (validTrackIds.length === 0) {
+        addToast({
+          title: 'Empty Playlist',
+          message: `"${pl.name}" contains no available tracks in your library.`,
+          type: 'warning',
+        });
+        return;
+      }
+
+      const startingId = startTrackId && validTrackIds.includes(startTrackId) ? startTrackId : validTrackIds[0];
+      const startIdx = validTrackIds.indexOf(startingId);
+
+      // Remaining tracks to enqueue
+      const upcomingIds = validTrackIds.slice(startIdx + 1);
+      const newQueue: QueueItem[] = upcomingIds.map((tid, idx) => ({
+        queueId: `q-pl-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+        trackId: tid,
+        addedAt: Date.now() + idx,
+      }));
+
+      setQueue(newQueue);
+      await playTrack(startingId);
+
+      addToast({
+        title: 'Playing Playlist',
+        message: `Playing "${pl.name}" (${validTrackIds.length} tracks).`,
+        type: 'info',
+      });
+    },
+    [playlists, tracks, playTrack, addToast]
+  );
+
   const approveProposal = useCallback(
     (id: string) => {
       setMetadataProposals((prev) =>
@@ -559,6 +872,172 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     },
     [addToast]
+  );
+
+  const runHealthCheck = useCallback(() => {
+    const report = LibraryHealthService.analyze(tracks, settings.library.renamePattern);
+    setLibraryIssues(report.issues);
+    setMetadataProposals((prev) => {
+      const existingMap = new Map(prev.map((p) => [p.id, p]));
+      return report.proposals.map((newProp) => {
+        const existing = existingMap.get(newProp.id);
+        return existing || newProp;
+      });
+    });
+  }, [tracks, settings.library.renamePattern]);
+
+  useEffect(() => {
+    runHealthCheck();
+  }, [runHealthCheck]);
+
+  const applyApprovedProposals = useCallback(async (): Promise<OperationResult<{ applied: number; failed: number }>> => {
+    const approved = metadataProposals.filter((p) => p.status === 'approved');
+    if (approved.length === 0) {
+      addToast({
+        title: 'No Changes Approved',
+        message: 'Review and approve at least one proposal before applying.',
+        type: 'warning',
+      });
+      return { success: false, message: 'No approved proposals' };
+    }
+
+    let appliedCount = 0;
+    let failedCount = 0;
+    const updatedTracksMap = new Map<string, Track>();
+
+    for (const prop of approved) {
+      const currentTrack = updatedTracksMap.get(prop.trackId) || tracks.find((t) => t.id === prop.trackId);
+      if (!currentTrack) {
+        failedCount++;
+        continue;
+      }
+
+      const updates: Partial<Track> = {
+        [prop.field]: prop.proposedValue,
+      };
+
+      const result = MetadataEditService.applyMetadata(currentTrack, updates);
+      if (result.success && result.data) {
+        updatedTracksMap.set(prop.trackId, result.data);
+        appliedCount++;
+      } else {
+        failedCount++;
+      }
+    }
+
+    for (const track of updatedTracksMap.values()) {
+      await dbRepository.saveTrack(track);
+    }
+
+    setTracks((prev) =>
+      prev.map((t) => updatedTracksMap.get(t.id) || t)
+    );
+
+    setMetadataProposals((prev) =>
+      prev.map((p) => (p.status === 'approved' ? { ...p, status: 'applied' } : p))
+    );
+
+    addToast({
+      title: 'Safe Changes Applied',
+      message: `Updated ${appliedCount} metadata fields in local index${failedCount > 0 ? ` (${failedCount} failed)` : ''}.`,
+      type: 'success',
+    });
+
+    return {
+      success: true,
+      data: { applied: appliedCount, failed: failedCount },
+    };
+  }, [metadataProposals, tracks, addToast]);
+
+  const updateTrackMetadata = useCallback(
+    async (trackId: string, updates: Partial<Track>): Promise<OperationResult<Track>> => {
+      const trk = tracks.find((t) => t.id === trackId);
+      if (!trk) {
+        return { success: false, error: 'Track not found in library index' };
+      }
+
+      const result = MetadataEditService.applyMetadata(trk, updates);
+      if (!result.success || !result.data) {
+        addToast({
+          title: 'Validation Error',
+          message: result.error || 'Failed to update track metadata',
+          type: 'error',
+        });
+        return result;
+      }
+
+      await dbRepository.saveTrack(result.data);
+
+      setTracks((prev) => prev.map((t) => (t.id === trackId ? result.data! : t)));
+      if (selectedTrack?.id === trackId) {
+        setSelectedTrack(result.data);
+      }
+
+      addToast({
+        title: 'Metadata Updated',
+        message: `Updated metadata for "${result.data.title}".`,
+        type: 'success',
+      });
+
+      return result;
+    },
+    [tracks, selectedTrack, addToast]
+  );
+
+  const applyRenameTemplate = useCallback(
+    async (template: string, trackIds?: string[]): Promise<OperationResult<{ renamed: number; failed: number }>> => {
+      const targetTracks = trackIds
+        ? tracks.filter((t) => trackIds.includes(t.id))
+        : tracks;
+
+      const previews = MetadataEditService.generateRenamePreview(targetTracks, template);
+      const validToRename = previews.filter((p) => p.status === 'valid');
+
+      if (validToRename.length === 0) {
+        addToast({
+          title: 'No Files Renamed',
+          message: 'All files either already match the template or contain missing fields/conflicts.',
+          type: 'warning',
+        });
+        return { success: false, message: 'No valid files to rename' };
+      }
+
+      let renamedCount = 0;
+      const updatedList: Track[] = [];
+
+      for (const item of validToRename) {
+        const trk = tracks.find((t) => t.id === item.trackId);
+        if (trk) {
+          const updatedTrack: Track = {
+            ...trk,
+            fileName: item.proposedFileName,
+            lastModified: Date.now(),
+          };
+          await dbRepository.saveTrack(updatedTrack);
+          updatedList.push(updatedTrack);
+          renamedCount++;
+        }
+      }
+
+      setTracks((prev) =>
+        prev.map((t) => {
+          const found = updatedList.find((u) => u.id === t.id);
+          return found || t;
+        })
+      );
+
+      addToast({
+        title: 'Filenames Standardized',
+        message: `Updated filename index for ${renamedCount} track${renamedCount === 1 ? '' : 's'}.`,
+        type: 'success',
+      });
+
+      return {
+        success: true,
+        data: { renamed: renamedCount, failed: 0 },
+      };
+    },
+    [tracks, addToast]
   );
 
   const rejectProposal = useCallback(
@@ -665,6 +1144,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     async (id: string): Promise<void> => {
       await dbRepository.deleteTrack(id);
       setTracks((prev) => prev.filter((t) => t.id !== id));
+
+      // Safely preserve playlist integrity: clean up track reference from all playlists
+      setPlaylists((prev) => {
+        const updated = prev.map((pl) => {
+          if (pl.trackIds.includes(id)) {
+            const nextPl = {
+              ...pl,
+              trackIds: pl.trackIds.filter((tid) => tid !== id),
+              updatedAt: Date.now(),
+            };
+            dbRepository.savePlaylist(nextPl).catch(() => {});
+            return nextPl;
+          }
+          return pl;
+        });
+        return updated;
+      });
+
+      // Remove from upcoming queue if present
+      setQueue((prev) => prev.filter((q) => q.trackId !== id));
+
       if (playbackState.currentTrackId === id) {
         engine.pause();
         setPlaybackState((prev) => ({
@@ -691,16 +1191,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         route,
-        setRoute,
+        setRoute: handleSetRoute,
         settings,
         updateSettings,
         toggleTheme,
+        layout,
+        updateLayout,
+        isVisualizerOpen,
+        setIsVisualizerOpen,
+        toggleVisualizer,
+        playFromLibrary,
         tracks,
         selectedTrack,
         setSelectedTrack,
         playlists,
         selectedPlaylistId,
         setSelectedPlaylistId,
+        createPlaylist,
+        updatePlaylist,
+        deletePlaylist,
+        addTrackToPlaylist,
+        removeTrackFromPlaylist,
+        reorderPlaylistTracks,
+        playPlaylist,
+        playlistModalTrack,
+        setPlaylistModalTrack,
         playbackState,
         playbackEngine: engine,
         queue,
@@ -722,6 +1237,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         metadataProposals,
         approveProposal,
         rejectProposal,
+        applyApprovedProposals,
+        updateTrackMetadata,
+        applyRenameTemplate,
+        runHealthCheck,
+        editTrackModal,
+        setEditTrackModal,
         searchQuery,
         setSearchQuery,
         isScanning,

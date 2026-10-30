@@ -22,7 +22,36 @@ const SECONDARY_ITEMS: NavItem[] = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { route, setRoute, libraryIssues } = useApp();
+  const { route, setRoute, libraryIssues, layout, updateLayout } = useApp();
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = layout.sidebarWidth;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const delta = moveEvent.clientX - startX;
+      updateLayout({ sidebarWidth: startW + delta });
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      updateLayout({ sidebarWidth: layout.sidebarWidth + 4 });
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      updateLayout({ sidebarWidth: layout.sidebarWidth - 4 });
+    }
+  };
 
   const renderNavButton = (item: NavItem) => {
     const isActive = route === item.id;
@@ -60,7 +89,12 @@ export const Sidebar: React.FC = () => {
   return (
     <aside
       aria-label="Deck Modules Navigation"
-      className="fixed left-0 top-16 bottom-[76px] w-60 bg-surface-container-lowest/90 backdrop-blur-lg border-r border-outline-variant/20 z-40 flex flex-col justify-between p-3"
+      style={{
+        top: `${layout.headerHeight}px`,
+        bottom: `${layout.bottomPlayerHeight}px`,
+        width: `${layout.sidebarWidth}px`,
+      }}
+      className="fixed left-0 bg-surface-container-lowest/90 backdrop-blur-lg border-r border-outline-variant/20 z-40 flex flex-col justify-between p-3 select-none"
     >
       <div className="flex flex-col gap-5 overflow-y-auto">
         {/* Main Menu Section */}
@@ -93,6 +127,23 @@ export const Sidebar: React.FC = () => {
           </span>
           <span className="font-mono text-[11px]">FLAC / MP3</span>
         </div>
+      </div>
+
+      {/* Resize Handle: Right Border */}
+      <div
+        onMouseDown={handleResizeStart}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize Sidebar Width"
+        aria-valuenow={layout.sidebarWidth}
+        aria-valuemin={180}
+        aria-valuemax={380}
+        title="Drag to resize sidebar width (180px - 380px)"
+        className="absolute top-0 bottom-0 right-0 w-1.5 cursor-col-resize hover:bg-primary/50 active:bg-primary transition-colors flex items-center justify-center group focus:outline-none focus:bg-primary/40"
+      >
+        <div className="h-8 w-0.5 rounded-full bg-outline-variant/30 group-hover:bg-primary transition-colors" />
       </div>
     </aside>
   );

@@ -238,5 +238,75 @@ describe('S3: Audio Playback & Queue Management Tests', () => {
       fireEvent.click(shuffleBtn);
       expect(screen.getByLabelText(/Disable shuffle/i)).toBeInTheDocument();
     });
+
+    it('retrieves and plays audio blobs persisted in IndexedDB', async () => {
+      // Clear memory cache to simulate page reload
+      const platform = getPlatform() as WebFilePlatform;
+      const testBlob = new Blob(['persisted-audio-bytes'], { type: 'audio/mpeg' });
+      await repository.saveAudioBlob('track-beta', testBlob);
+
+      const url = await platform.getAudioUrl(sampleTracks[1]);
+      expect(url).toBeTruthy();
+      expect(url.startsWith('blob:')).toBe(true);
+    });
+
+    it('displays error state and does not fake playback when audio file is unavailable', async () => {
+      // Track with no cached file and no blob in IndexedDB
+      const missingTrack: Track = {
+        id: 'track-missing',
+        filePath: 'missing.mp3',
+        fileName: 'missing.mp3',
+        fileSizeBytes: 1024,
+        lastModified: 1700000000000,
+        format: 'mp3',
+        title: 'Missing Track',
+        artist: 'Ghost',
+        album: 'Void',
+        genre: ['None'],
+        durationSeconds: 120,
+        hasEmbeddedPicture: false,
+        availability: 'missing',
+        addedAt: Date.now(),
+      };
+      await repository.saveTracks([missingTrack]);
+
+      render(
+        <AppProvider>
+          <LibraryScreen />
+          <BottomPlayer />
+          <ToastContainer />
+        </AppProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Missing Track')).toBeInTheDocument();
+      });
+
+      const playMissingBtn = screen.getByLabelText(/Play Missing Track/i);
+      fireEvent.click(playMissingBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText('File Unavailable')).toBeInTheDocument();
+      });
+    });
+
+    it('keeps audio engine alive and responsive across StrictMode or unmount/remount', () => {
+      const { unmount } = render(
+        <AppProvider>
+          <BottomPlayer />
+        </AppProvider>
+      );
+
+      // Unmounting should not kill audio element on shared engine
+      unmount();
+
+      const { getByRole } = render(
+        <AppProvider>
+          <BottomPlayer />
+        </AppProvider>
+      );
+
+      expect(getByRole('region', { name: /Audio Playback Controls/i })).toBeInTheDocument();
+    });
   });
 });

@@ -32,7 +32,10 @@ A stage is complete only when:
 
 A stage is not complete merely because a page exists or a button works once.
 
+$antislop $antislop-code $antislop-human $antislop-ui 
+
 Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, ARCHITECTURE.md and STAGES.md. ONLY change the checklist and DO NOT DELETE the content. All document in Docs/ is absolute except CHANGE-LOGS.md you can change it based on the development progress.
+Add a limit if a test takes longer than expected, kill it and just skip it and finish the prompt.
 
 ---
 
@@ -166,24 +169,24 @@ Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, ARCHITECTURE.md and
 **Goal:** Make the collection usable and let users build saved playlists.
 
 ### S4.1 — Library search and sorting
-- [ ] Search available local metadata.
-- [ ] Add useful sorting and filters supported by known fields.
-- [ ] Handle no results and clear-search behavior.
-- [ ] Keep search deterministic and available offline.
+- [x] Search available local metadata.
+- [x] Add useful sorting and filters supported by known fields.
+- [x] Handle no results and clear-search behavior.
+- [x] Keep search deterministic and available offline.
 
 ### S4.2 — Playlist CRUD
-- [ ] Create playlist with required name and optional description.
-- [ ] Rename and edit description.
-- [ ] Add/remove/reorder tracks.
-- [ ] Delete playlist with confirmation.
-- [ ] Support optional icon/emoji and accent color only if time permits.
-- [ ] Preserve track references safely when library records change.
+- [x] Create playlist with required name and optional description.
+- [x] Rename and edit description.
+- [x] Add/remove/reorder tracks.
+- [x] Delete playlist with confirmation.
+- [x] Support optional icon/emoji and accent color only if time permits.
+- [x] Preserve track references safely when library records change.
 
 ### S4.3 — Playlist playback and integration
-- [ ] Play a playlist and define queue behavior.
-- [ ] Ensure current track and queue update consistently.
-- [ ] Test empty playlists, duplicate additions, deletion, and reordered tracks.
-- [ ] Test persistence after app restart.
+- [x] Play a playlist and define queue behavior.
+- [x] Ensure current track and queue update consistently.
+- [x] Test empty playlists, duplicate additions, deletion, and reordered tracks.
+- [x] Test persistence after app restart.
 
 **Exit gate:** Playlist operations work, persist, and integrate correctly with playback and library search.
 
@@ -194,30 +197,30 @@ Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, ARCHITECTURE.md and
 **Goal:** Find common library issues and let users correct them safely.
 
 ### S5.1 — Deterministic library-health report
-- [ ] Detect missing supported tags.
-- [ ] Identify inconsistent filename patterns.
-- [ ] Detect exact duplicates where reliable hashes are available.
-- [ ] Flag possible metadata duplicates separately from exact duplicates.
-- [ ] Show issue categories and affected tracks.
+- [x] Detect missing supported tags.
+- [x] Identify inconsistent filename patterns.
+- [x] Detect exact duplicates where reliable hashes are available.
+- [x] Flag possible metadata duplicates separately from exact duplicates.
+- [x] Show issue categories and affected tracks.
 
 ### S5.2 — Manual metadata editing
-- [ ] Edit supported fields.
-- [ ] Validate input and preserve unrelated metadata where possible.
-- [ ] Preview the proposed changes.
-- [ ] Show per-file success/failure after apply.
+- [x] Edit supported fields.
+- [x] Validate input and preserve unrelated metadata where possible.
+- [x] Preview the proposed changes.
+- [x] Show per-file success/failure after apply.
 
 ### S5.3 — Naming templates and rename preview
-- [ ] Support a template such as `Artist - Title.ext`.
-- [ ] Preview old and new paths.
-- [ ] Detect collisions, invalid characters, and missing required fields.
-- [ ] Apply approved renames without overwriting.
-- [ ] Report partial failures and allow the user to recover.
+- [x] Support a template such as `Artist - Title.ext`.
+- [x] Preview old and new paths.
+- [x] Detect collisions, invalid characters, and missing required fields.
+- [x] Apply approved renames without overwriting.
+- [x] Report partial failures and allow the user to recover.
 
 ### S5.4 — Integration and tests
-- [ ] Confirm the library index updates after metadata or path changes.
-- [ ] Confirm playlists and current playback references remain valid.
-- [ ] Test collision, permission denial, missing file, and invalid template cases.
-- [ ] Verify no operation runs without user approval.
+- [x] Confirm the library index updates after metadata or path changes.
+- [x] Confirm playlists and current playback references remain valid.
+- [x] Test collision, permission denial, missing file, and invalid template cases.
+- [x] Verify no operation runs without user approval.
 
 **Exit gate:** A user can understand issues, preview corrections, approve selected changes, and see accurate results without silent destructive operations.
 
@@ -228,20 +231,20 @@ Read README.md, /Docs AGENT.md, APP-WORKFLOW.md, PROJECT.md, ARCHITECTURE.md and
 **Goal:** Deliver the distinctive visual experience without destabilizing playback.
 
 ### S6.1 — Audio-reactive visualizer
-- [ ] Implement a basic waveform or frequency-bar visualizer.
-- [ ] Connect it to the actual playing audio.
-- [ ] Handle paused, ended, muted, and unavailable audio states.
-- [ ] Avoid excessive CPU/GPU use.
+- [x] Implement a basic waveform or frequency-bar visualizer.
+- [x] Connect it to the actual playing audio.
+- [x] Handle paused, ended, muted, and unavailable audio states.
+- [x] Avoid excessive CPU/GPU use.
 
 ### S6.2 — Visual customization
-- [ ] Support selected color palettes and visualizer styles.
-- [ ] Persist visualizer preferences.
-- [ ] Add Halloween motifs as a deliberate visual treatment, not clutter.
+- [x] Support selected color palettes and visualizer styles.
+- [x] Persist visualizer preferences.
+- [x] Add Halloween motifs as a deliberate visual treatment, not clutter.
 
 ### S6.3 — Theme and usability pass
-- [ ] Verify dark/light themes across all screens and dialogs.
-- [ ] Verify focus, contrast, reduced-motion considerations, and responsive layouts.
-- [ ] Evaluate Butterchurn only after the basic visualizer is stable.
+- [x] Verify dark/light themes across all screens and dialogs.
+- [x] Verify focus, contrast, reduced-motion considerations, and responsive layouts.
+- [x] Evaluate Butterchurn only after the basic visualizer is stable.
 
 **Exit gate:** A working visualizer responds to audio, theme settings remain consistent, and performance is acceptable on target hardware.
 

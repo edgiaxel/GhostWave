@@ -23,7 +23,41 @@ export const BottomPlayer: React.FC = () => {
     toggleRepeat,
     setRoute,
     setActiveModal,
+    layout,
+    updateLayout,
+    isVisualizerOpen,
+    toggleVisualizer,
   } = useApp();
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = layout.bottomPlayerHeight;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      // Dragging up (negative clientY delta) increases height
+      const delta = startY - moveEvent.clientY;
+      updateLayout({ bottomPlayerHeight: startH + delta });
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      updateLayout({ bottomPlayerHeight: layout.bottomPlayerHeight + 2 });
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      updateLayout({ bottomPlayerHeight: layout.bottomPlayerHeight - 2 });
+    }
+  };
 
   const currentTrack = tracks.find((t) => t.id === playbackState.currentTrackId) || null;
 
@@ -31,10 +65,27 @@ export const BottomPlayer: React.FC = () => {
     <footer
       role="region"
       aria-label="Audio Playback Controls"
-      className="fixed bottom-0 left-0 right-0 h-[76px] bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/30 z-50 flex items-center justify-between px-space-md sm:px-space-lg shadow-lg"
+      style={{ height: `${layout.bottomPlayerHeight}px` }}
+      className="fixed bottom-0 left-0 right-0 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/30 z-50 flex items-center justify-between px-space-md sm:px-space-lg shadow-2xl select-none"
     >
+      {/* Resize Handle: Top Border */}
+      <div
+        onMouseDown={handleResizeStart}
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize Bottom Player Height"
+        aria-valuenow={layout.bottomPlayerHeight}
+        aria-valuemin={68}
+        aria-valuemax={120}
+        title="Drag to resize bottom player height (68px - 120px)"
+        className="absolute top-0 left-0 right-0 h-1.5 cursor-row-resize hover:bg-primary/50 active:bg-primary transition-colors flex items-center justify-center group focus:outline-none focus:bg-primary/40 z-50"
+      >
+        <div className="w-8 h-0.5 rounded-full bg-outline-variant/30 group-hover:bg-primary transition-colors" />
+      </div>
       {/* Left: Track Information & Thumbnail */}
-      <div className="flex items-center gap-3 min-w-[200px] max-w-[280px] sm:max-w-[340px]">
+      <div className="flex items-center gap-3 w-[200px] sm:w-[260px] md:w-[300px] max-w-[320px] shrink-0 min-w-0 z-10">
         <div
           className="w-12 h-12 rounded bg-surface-container flex items-center justify-center shrink-0 border border-outline-variant/30 overflow-hidden relative group cursor-pointer"
           onClick={() => setRoute('audio-visualizer')}
@@ -80,7 +131,7 @@ export const BottomPlayer: React.FC = () => {
       </div>
 
       {/* Center: Playback Transport Controls & Seekbar */}
-      <div className="flex flex-col items-center gap-1 flex-1 max-w-xl px-2">
+      <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 w-full max-w-xs sm:max-w-md md:max-w-xl px-2 z-20 pointer-events-auto">
         <div className="flex items-center gap-3 sm:gap-4">
           {/* Shuffle Toggle */}
           <button
@@ -160,7 +211,7 @@ export const BottomPlayer: React.FC = () => {
               type="range"
               min={0}
               max={playbackState.durationSeconds > 0 ? playbackState.durationSeconds : 100}
-              value={playbackState.currentTimeSeconds}
+              value={Math.min(playbackState.currentTimeSeconds, playbackState.durationSeconds || 100)}
               onChange={(e) => seekTrack(Number(e.target.value))}
               disabled={!currentTrack}
               aria-label="Seek position in track"
@@ -172,7 +223,7 @@ export const BottomPlayer: React.FC = () => {
       </div>
 
       {/* Right: Audio Levels, Volume & Queue */}
-      <div className="hidden md:flex items-center gap-3 min-w-[200px] justify-end">
+      <div className="hidden md:flex items-center gap-3 w-[200px] sm:w-[260px] md:w-[300px] max-w-[320px] shrink-0 justify-end z-10">
         {/* Visualizer Shortcut */}
         <button
           onClick={() => setRoute('audio-visualizer')}
@@ -222,6 +273,30 @@ export const BottomPlayer: React.FC = () => {
           <span className="material-symbols-outlined text-xl">playlist_play</span>
           {queue.length > 0 && (
             <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-primary text-on-primary text-[10px] font-bold font-mono">
+              {queue.length}
+            </span>
+          )}
+        </button>
+
+        {/* Slide-Up Visualizer & Queue Drawer Toggle Arrow */}
+        <button
+          onClick={toggleVisualizer}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm border ${
+            isVisualizerOpen
+              ? 'bg-primary text-on-primary border-primary'
+              : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface border-outline-variant/30'
+          }`}
+          title={isVisualizerOpen ? 'Collapse Visualizer & Queue' : 'Expand Visualizer & Queue'}
+          aria-label={isVisualizerOpen ? 'Collapse Visualizer & Queue' : 'Expand Visualizer & Queue'}
+        >
+          <span className="material-symbols-outlined text-base">
+            {isVisualizerOpen ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}
+          </span>
+          <span className="hidden lg:inline">
+            {isVisualizerOpen ? 'Collapse' : 'Visualizer & Queue'}
+          </span>
+          {queue.length > 0 && !isVisualizerOpen && (
+            <span className="px-1.5 py-0.2 rounded-full bg-secondary text-on-secondary font-mono text-[10px]">
               {queue.length}
             </span>
           )}

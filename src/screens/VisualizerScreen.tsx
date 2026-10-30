@@ -2,11 +2,33 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const VisualizerScreen: React.FC = () => {
-  const { playbackState, tracks, playbackEngine, togglePlayPause } = useApp();
+  const { playbackState, tracks, playbackEngine, togglePlayPause, settings, updateSettings } = useApp();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const [preset, setPreset] = useState<'ghost_pulse' | 'spectral_bars' | 'waveform_rings'>('ghost_pulse');
-  const [sensitivity, setSensitivity] = useState(75);
+  const [preset, setPreset] = useState<'ghost_pulse' | 'spectral_bars' | 'waveform_rings' | 'pumpkin_pulse'>(
+    settings.visualizer.preset || 'ghost_pulse'
+  );
+  const [sensitivity, setSensitivity] = useState(settings.visualizer.sensitivity || 75);
+
+  const handlePresetSelect = (newPreset: typeof preset) => {
+    setPreset(newPreset);
+    updateSettings({
+      visualizer: {
+        ...settings.visualizer,
+        preset: newPreset,
+      },
+    });
+  };
+
+  const handleSensitivityChange = (val: number) => {
+    setSensitivity(val);
+    updateSettings({
+      visualizer: {
+        ...settings.visualizer,
+        sensitivity: val,
+      },
+    });
+  };
 
   const currentTrack = tracks.find((t) => t.id === playbackState.currentTrackId) || tracks[0] || null;
 
@@ -91,6 +113,42 @@ export const VisualizerScreen: React.FC = () => {
           ctx.fillStyle = i % 2 === 0 ? '#ddb7ff' : '#60ff99';
           ctx.fillRect(x, y, barWidth, Math.max(4, freqHeight));
         }
+      } else if (preset === 'pumpkin_pulse') {
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const baseRadius = Math.min(width, height) * 0.22 * (1 + ampMultiplier * 0.35);
+
+        if (typeof ctx.arc === 'function') {
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
+          if (typeof ctx.createRadialGradient === 'function') {
+            const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, baseRadius);
+            grad.addColorStop(0, 'rgba(255, 182, 141, 0.4)');
+            grad.addColorStop(0.7, 'rgba(255, 138, 76, 0.2)');
+            grad.addColorStop(1, 'rgba(255, 138, 76, 0)');
+            ctx.fillStyle = grad;
+          } else {
+            ctx.fillStyle = 'rgba(255, 182, 141, 0.3)';
+          }
+          ctx.fill();
+        }
+
+        const rays = 16;
+        ctx.strokeStyle = '#ffb68d';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < rays; i++) {
+          const angle = (i / rays) * Math.PI * 2 + phase * 0.5;
+          const rayLength = baseRadius * (1.2 + Math.sin(i * 3 + phase) * 0.25 * ampMultiplier);
+          const x1 = centerX + Math.cos(angle) * baseRadius;
+          const y1 = centerY + Math.sin(angle) * baseRadius;
+          const x2 = centerX + Math.cos(angle) * rayLength;
+          const y2 = centerY + Math.sin(angle) * rayLength;
+
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
       } else {
         ctx.beginPath();
         ctx.strokeStyle = '#ddb7ff';
@@ -136,9 +194,9 @@ export const VisualizerScreen: React.FC = () => {
         </div>
 
         {/* Preset Selector Buttons */}
-        <div className="flex items-center gap-1.5 bg-surface-container p-1 rounded-full border border-outline-variant/20 self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 bg-surface-container p-1 rounded-full border border-outline-variant/20 self-start sm:self-auto flex-wrap">
           <button
-            onClick={() => setPreset('ghost_pulse')}
+            onClick={() => handlePresetSelect('ghost_pulse')}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
               preset === 'ghost_pulse'
                 ? 'bg-primary text-on-primary font-semibold shadow-sm'
@@ -148,7 +206,7 @@ export const VisualizerScreen: React.FC = () => {
             Ghost Pulse
           </button>
           <button
-            onClick={() => setPreset('spectral_bars')}
+            onClick={() => handlePresetSelect('spectral_bars')}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
               preset === 'spectral_bars'
                 ? 'bg-primary text-on-primary font-semibold shadow-sm'
@@ -158,7 +216,7 @@ export const VisualizerScreen: React.FC = () => {
             Spectral Bars
           </button>
           <button
-            onClick={() => setPreset('waveform_rings')}
+            onClick={() => handlePresetSelect('waveform_rings')}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
               preset === 'waveform_rings'
                 ? 'bg-primary text-on-primary font-semibold shadow-sm'
@@ -166,6 +224,16 @@ export const VisualizerScreen: React.FC = () => {
             }`}
           >
             Waveform Rings
+          </button>
+          <button
+            onClick={() => handlePresetSelect('pumpkin_pulse')}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              preset === 'pumpkin_pulse'
+                ? 'bg-primary text-on-primary font-semibold shadow-sm'
+                : 'text-outline hover:text-on-surface'
+            }`}
+          >
+            Pumpkin Pulse
           </button>
         </div>
       </div>
@@ -183,7 +251,7 @@ export const VisualizerScreen: React.FC = () => {
             min={10}
             max={100}
             value={sensitivity}
-            onChange={(e) => setSensitivity(Number(e.target.value))}
+            onChange={(e) => handleSensitivityChange(Number(e.target.value))}
             className="w-20 h-1 bg-surface-container-high rounded appearance-none cursor-pointer accent-primary"
           />
         </div>

@@ -6,12 +6,114 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased] - S4: Library Search and Playlists (Planned)
+## [0.7.0] - S6: Halloween Visualizer, Slide-Up Drawer & Resizable Fixed Shell (2026-10-30)
 
-### Planned
-- S4.1: Fast offline metadata search and sorting.
-- S4.2: Playlist CRUD operations and smart crate persistence.
-- S4.3: Integration tests and playlist playback from queue.
+### Added
+- **Fixed Resizable Layout Engine & Viewport Bounds (`src/components/layout/AppShell.tsx`, `Header.tsx`, `Sidebar.tsx`, `BottomPlayer.tsx`)**:
+  - Pinned the Header, Sidebar, and Bottom Player to fixed viewport positions so scrolling the main dashboard never moves the transport controls or hides them off-screen.
+  - Implemented interactive drag-to-resize handles on all three framing elements with strict boundary limits:
+    - **Header**: Min 52px, max 84px, default 64px (resizable via bottom border handle or keyboard up/down arrows).
+    - **Sidebar**: Min 180px, max 380px, default 240px (resizable via right border handle or keyboard left/right arrows).
+    - **Bottom Player**: Min 68px, max 120px, default 76px (resizable via top border handle or keyboard up/down arrows).
+  - Main scrollable area is bound strictly between the Header and Bottom Player with independent vertical scrolling, preventing content obstruction at both top and bottom extremes.
+  - Layout dimensions automatically persist to local storage (`ghostwave_layout_sizes`).
+- **Slide-Up "Now Playing & Visualizer" Drawer (`src/components/common/NowPlayingDrawer.tsx`)**:
+  - Added an expandable toggle arrow (`expand_less` / `expand_more`) on the right side of the Bottom Player.
+  - When activated, slides up a full-width immersive stage spanning the viewport below the Header and above the Bottom Player:
+    - **Audio-Reactive Canvas (Left / Center)**: High-performance 60fps Web Audio visualizer connected to the `PlaybackEngine`'s `AnalyserNode`.
+    - **Live Playback Queue (Right Panel)**: Integrated "Up Next Queue" with live currently-playing track banner, reordering controls (move up / down), remove buttons, and "Clear Queue" action.
+  - **Auto Queue Population**:
+    - Playing any track from **My Library** automatically populates upcoming library tracks into the queue.
+    - Playing any track from a **Playlist** automatically populates upcoming playlist tracks into the queue.
+- **S6.1: Audio-Reactive Visualizer Engine**:
+  - Connects directly to HTML5 Audio via Web Audio API `createMediaElementSource` and `AnalyserNode`.
+  - Analyzes real-time frequency data and time-domain oscilloscope waveforms across bass, mid, and treble registers.
+  - Graceful audio state handling: when audio is paused, ended, muted, or unavailable, renders gentle ambient breathing pulses without freezing, dropping frames, or spiking CPU/GPU.
+  - Resource conservation: shuts down animation frames (`cancelAnimationFrame`) completely when the drawer is closed or unmounted.
+- **S6.2: Visual Customization & Halloween Motifs**:
+  - Four distinct visualizer presets:
+    - `ghost_pulse`: Multi-ring spectral waves with frequency harmonic ripples.
+    - `spectral_bars`: Frequency bar spectrum with peak highlight caps and theme-reactive gradients.
+    - `waveform_rings`: Real-time audio waveform oscilloscope ring around a glowing core.
+    - `pumpkin_pulse`: Spooky jack-o'-lantern audio aura with bass punch expansion.
+  - Halloween Motifs: Optional floating spectral ember particles reacting dynamically to bass and mid frequencies.
+  - Sensitivity adjustment slider (20% to 150%) and preset choices persist in `settings.visualizer`.
+- **S6.3: Usability, Contrast & Butterchurn Evaluation**:
+  - Full contrast verification across light and dark Halloween themes (`halloween-dark` and `halloween-light`).
+  - Accessibility: `prefers-reduced-motion` detection dynamically scales down particle speed and pulsation amplitudes for sensitive users.
+  - Butterchurn Evaluation: Analyzed WebAssembly Milkdrop emulation (Butterchurn). Kept lightweight native Canvas 2D as the primary zero-dependency, 100% offline visualizer for guaranteed responsiveness on all desktop hardware.
+- **Test Suite (`src/test/s6-visualizer-theme.test.tsx`)**:
+  - Created 7 integration tests covering layout limit clamping, resize handles, slide-up drawer toggles, auto queue population from library and playlists, visualizer preset selection, and theme dataset switching.
+  - All 48 tests passing across 6 test suites with 0 errors and verified production build.
+
+---
+
+## [0.6.0] - S5: Library Health, Metadata Editing, and Safe Renaming (2026-10-30)
+
+### Added
+- **S5.1: Deterministic Library-Health Report (`src/services/health/LibraryHealthService.ts`)**:
+  - Deterministic library analysis detecting:
+    - Missing tags: identifies blank or generic titles, empty or unknown artists, and missing albums. Automatically generates high-confidence tag proposals from "Artist - Title" filename heuristics.
+    - Inconsistent naming patterns: compares filenames against configurable templates (e.g. `{artist} - {title}`) and flags divergences, snake_case underscores, or mismatched prefixes.
+    - Exact duplicates: pairs files sharing identical byte sizes and durations with matching formats.
+    - Possible metadata duplicates: identifies tracks across different files sharing normalized artist and title tags while preserving both entries for user review.
+  - Generates structured, classified `LibraryIssue` records categorized by type and severity (`high`, `medium`, `low`) with actionable suggestions.
+- **S5.2: Manual Metadata Editing and Validation (`src/services/health/MetadataEditService.ts`, `src/components/common/MetadataEditModal.tsx`)**:
+  - `MetadataEditService`: Validation engine ensuring non-empty title and artist, realistic release years (1800-2100), and valid track numbers (1-999).
+  - Safe, non-destructive metadata updates preserving immutable file descriptors (`id`, `filePath`, `format`, `fileSizeBytes`, `durationSeconds`).
+  - `MetadataEditModal`: Accessible modal dialog with live inline validation errors, pending diff comparison preview (showing before and after), and clear feedback toasts. Accessible from library table rows, grid card hover menus, and health issue cards.
+- **S5.3: Naming Templates and Safe Rename Preview (`src/services/health/MetadataEditService.ts`, `src/screens/HealthCleanupScreen.tsx`)**:
+  - Configurable filename standardization supporting `{artist}`, `{title}`, `{album}`, and `{trackNumber}` tokens with quick-insertion buttons.
+  - Safe rename simulation computing proposed names, detecting filename collisions across multiple files, and flagging invalid filesystem characters (`<>:"/\\|?*`).
+  - Collision and error prevention: tracks with missing fields or conflicting destinations are flagged and prevented from applying.
+- **S5.4: User-Approved Execution, Preservation, and UI Workflows (`src/screens/HealthCleanupScreen.tsx`, `src/context/AppContext.tsx`)**:
+  - Zero silent changes: proposed tag diffs require explicit per-row approval before being applied to the library.
+  - Health & Cleanup interface featuring:
+    - Summary stat cards: total indexed tracks, detected issues, pending proposals, and standardizer readiness.
+    - Issue category filter pills: `All Issues`, `Missing Tags`, `Inconsistent Naming`, and `Duplicates`.
+    - Proposed Tag Diffs table with approve/reject actions, confidence percentage, and bulk application.
+    - Filename Standardizer tab with live preview table and collision indicators.
+  - Playlist reference preservation: updating track tags updates the indexed track record without breaking existing playlist references or queued playback items.
+- **Test Suite (`src/test/s5-health-metadata.test.tsx`)**:
+  - Added 7 comprehensive integration tests covering deterministic issue detection, exact vs metadata duplicate separation, live metadata validation, non-destructive updates, collision detection, user approval workflows, and playlist reference preservation.
+  - All 41 tests passing across 5 test suites with 0 failures and clean production build.
+
+---
+
+## [0.5.0] - S4: Library Search and Playlists (2026-10-30)
+
+### Added
+- **S4.1: Library Search, Sorting, and Filtering**:
+  - Offline deterministic search matching against `title`, `artist`, `album`, `albumArtist`, `format`, `fileName`, and `genre`.
+  - Format and artwork filter pills: `All Tracks`, `FLAC`, `MP3`, `WAV`, and `Missing Art`.
+  - Sort dropdown with direction toggle supporting `title`, `artist`, `album`, `duration`, `addedAt`, and `trackNumber`.
+  - Empty search state with one-click "Reset Search and Filters" action.
+  - Active search and filter indicator bar summarizing filtered track count and active query terms.
+- **S4.2: Playlist CRUD & Smart Crates**:
+  - `src/services/storage/IndexedDbRepository.ts`: Upgraded DB version to 2 and added persistent `playlists` object store (`getAllPlaylists`, `getPlaylistById`, `savePlaylist`, `deletePlaylist`).
+  - `src/components/common/AddToPlaylistModal.tsx`: Accessible dialog to add any track from the library table or grid card to existing playlists or create a new playlist on the fly.
+  - `src/screens/PlaylistsScreen.tsx`: Complete management interface supporting playlist creation (required name, optional description, icon picker, accent color), in-place renaming/editing, track reordering (up/down), track removal, and deletion confirmation modal dialog.
+  - Reference safety invariant: When tracks are removed from the library index, `removeTrackFromLibrary` safely cascades to strip track IDs from all stored playlists and queue items without corrupting records.
+- **S4.3: Playlist Playback, Queue Integration & Persistence**:
+  - "Play All" and individual track play from playlists: starts playback of selected/first track and enqueues all upcoming tracks into the playback queue.
+  - Playlists and track ordering persist offline in IndexedDB across page reloads and browser restarts.
+- **Player Layout Fix**:
+  - Centered transport controls in `BottomPlayer.tsx` using `absolute left-1/2 -translate-x-1/2` with symmetric fixed-width side panels, guaranteeing zero layout shift when track titles or cover art change width on the left.
+- **Test Suite**:
+  - Created `src/test/s4-playlists.test.tsx` containing 8 comprehensive integration tests for S4.1, S4.2, and S4.3.
+  - All 34 tests passing across 4 test suites with clean production build (`npm run build`).
+
+---
+
+## [0.4.1] - S3: Playback Engine Fix & Audio Persistence (2026-10-30)
+
+### Fixed
+- **StrictMode PlaybackEngine Destruction**: Fixed issue where React 18 `StrictMode` effect cleanup in `AppContext` called `engine.destroy()`, permanently setting `audio` to `null` on startup. The effect cleanup now detaches event listeners via `engine.setEvents({})` without terminating the underlying audio element.
+- **Offline Audio Blob Persistence**: `LibraryScanner` now persists audio file blobs to IndexedDB's `blobs` object store via `saveAudioBlob`. `WebFilePlatform.getAudioUrl` now queries IndexedDB if a track is not present in the in-memory cache, ensuring playback works across page reloads and browser restarts.
+- **Seekbar & Playback Progress**: Connected live `timeupdate` events to `BottomPlayer` slider, fixed readyState seek timing, and clamped seek slider values to prevent out-of-bounds duration jumps.
+- **Honest Error Handling**: Eliminated silent playback state simulation when an audio file is missing; now triggers explicit `error` status and informs the user with an actionable error toast.
+- **Track List & Card Interaction**: Clicking an already-playing track in the table, grid, or hero featured banner toggles play/pause instead of restarting the song from the beginning.
+- **Expanded Test Suite**: Added 3 new tests in `src/test/s3-playback.test.tsx` verifying IndexedDB blob playback, unmount resilience, and unavailable track error handling (26 total tests passing).
 
 ---
 

@@ -1,4 +1,5 @@
 import { FileOperationsPlatform, OperationResult, Track } from '../../types';
+import { dbRepository } from '../storage/IndexedDbRepository';
 
 export class WebFilePlatform implements FileOperationsPlatform {
   private activeObjectUrls = new Set<string>();
@@ -146,6 +147,18 @@ export class WebFilePlatform implements FileOperationsPlatform {
       const url = URL.createObjectURL(cachedFile);
       this.activeObjectUrls.add(url);
       return url;
+    }
+
+    try {
+      const storedBlob = await dbRepository.getAudioBlob(track.id);
+      if (storedBlob) {
+        this.fileCache.set(track.id, storedBlob);
+        const url = URL.createObjectURL(storedBlob);
+        this.activeObjectUrls.add(url);
+        return url;
+      }
+    } catch {
+      // Fall through to path check
     }
 
     if (track.filePath && track.filePath.startsWith('blob:')) {
