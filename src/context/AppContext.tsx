@@ -30,6 +30,11 @@ import {
   ModelInfo,
   GenerateResult,
 } from '../services/ai/LocalAiProvider';
+import {
+  AiPlaylistService,
+  PlaylistProposalResult,
+} from '../services/ai/AiPlaylistService';
+import { AiMetadataService } from '../services/ai/AiMetadataService';
 
 export interface ToastMessage {
   id: string;
@@ -86,6 +91,7 @@ interface AppContextType {
   metadataProposals: MetadataProposal[];
   approveProposal: (id: string) => void;
   rejectProposal: (id: string) => void;
+  editProposalValue: (id: string, proposedValue: string) => void;
   applyApprovedProposals: () => Promise<OperationResult<{ applied: number; failed: number }>>;
   updateTrackMetadata: (trackId: string, updates: Partial<Track>) => Promise<OperationResult<Track>>;
   applyRenameTemplate: (template: string, trackIds?: string[]) => Promise<OperationResult<{ renamed: number; failed: number }>>;
@@ -113,6 +119,9 @@ interface AppContextType {
   testAiConnection: (endpointOverride?: string) => Promise<ConnectionStatus>;
   discoverAiModels: (endpointOverride?: string) => Promise<ModelInfo[]>;
   sendTestAiPrompt: (prompt: string, modelOverride?: string) => Promise<GenerateResult>;
+  generateAiPlaylistProposal: (query: string, modelOverride?: string) => Promise<PlaylistProposalResult>;
+  saveAiPlaylist: (proposal: PlaylistProposalResult, nameOverride?: string) => Promise<Playlist>;
+  generateAiMetadataProposals: (tracksToInspect?: Track[]) => Promise<MetadataProposal[]>;
   ollamaClient: OllamaClient;
 }
 
@@ -903,6 +912,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [addToast]
   );
 
+  const editProposalValue = useCallback(
+    (id: string, proposedValue: string) => {
+      setMetadataProposals((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, proposedValue, status: 'pending' } : p))
+      );
+      addToast({
+        title: 'Proposal Edited',
+        message: 'Proposed value updated. Review and click Approve to accept it.',
+        type: 'info',
+      });
+    },
+    [addToast]
+  );
+
   const runHealthCheck = useCallback(() => {
     const report = LibraryHealthService.analyze(tracks, settings.library.renamePattern);
     setLibraryIssues(report.issues);
@@ -1346,6 +1369,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [settings.localAi.model]
   );
 
+  const generateAiPlaylistProposal = useCallback(
+    async (query: string, modelOverride?: string): Promise<PlaylistProposalResult> => {
+      const service = new AiPlaylistService(ollamaClient);
+      return service.generatePlaylistProposal(query, tracksRef.current, modelOverride);
+    },
+    []
+  );
+
+  const saveAiPlaylist = useCallback(
+    async (proposal: PlaylistProposalResult, nameOverride?: string): Promise<Playlist> => {
+      const plName = nameOverride?.trim() || proposal.plan.name;
+      const newPl: Playlist = {
+        id: `pl-ai-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        name: plName,
+        description: proposal.plan.description || proposal.plan.explanation,
+        trackIds: proposal.resolvedTracks.map((t) => t.id),
+        isAiGenerated: true,
+        icon: 'queue_music',
+        accentColor: 'witch-violet',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      try {
+        await dbRepository.savePlaylist(newPl);
+      } catch (err) {
+        console.warn('GhostWave: saveAiPlaylist storage fallback:', err);
+      }
+
+      setPlaylists((prev) => [newPl, ...prev]);
+      setSelectedPlaylistId(newPl.id);
+
+      addToast({
+        title: 'Crate Saved',
+        message: `Created playlist "${newPl.name}" with ${newPl.trackIds.length} tracks.`,
+        type: 'success',
+      });
+
+      return newPl;
+    },
+    [addToast]
+  );
+
+  const generateAiMetadataProposals = useCallback(
+    async (tracksToInspect?: Track[]): Promise<MetadataProposal[]> => {
+      const targetTracks = tracksToInspect || tracksRef.current;
+      const service = new AiMetadataService(ollamaClient);
+      const proposals = await service.generateMetadataSuggestions(targetTracks);
+
+      if (proposals.length > 0) {
+        setMetadataProposals((prev) => {
+          const existingIds = new Set(prev.map((p) => `${p.trackId}-${p.field}`));
+          const novel = proposals.filter((p) => !existingIds.has(`${p.trackId}-${p.field}`));
+          return [...novel, ...prev];
+        });
+
+        addToast({
+          title: 'AI Tag Suggestions Ready',
+          message: `Generated ${proposals.length} tag proposal(s) with confidence scores for review.`,
+          type: 'success',
+        });
+      } else {
+        addToast({
+          title: 'No Tag Proposals',
+          message: 'All tracks have clean metadata or no evidence available.',
+          type: 'info',
+        });
+      }
+
+      return proposals;
+    },
+    [addToast]
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -1396,6 +1493,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         metadataProposals,
         approveProposal,
         rejectProposal,
+        editProposalValue,
         applyApprovedProposals,
         updateTrackMetadata,
         applyRenameTemplate,
@@ -1423,6 +1521,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         testAiConnection,
         discoverAiModels,
         sendTestAiPrompt,
+        generateAiPlaylistProposal,
+        saveAiPlaylist,
+        generateAiMetadataProposals,
         ollamaClient,
       }}
     >

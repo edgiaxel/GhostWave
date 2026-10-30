@@ -262,24 +262,24 @@ Add a limit if a test takes longer than expected, kill it and just skip it and f
 - [x] Keep all non-AI functions usable if no model is configured.
 
 ### S7.2 — Natural-language playlist query
-- [ ] Define a strict schema for search filters and constraints.
-- [ ] Send only necessary library metadata to the local model.
-- [ ] Validate model output and reject unknown fields/operators.
-- [ ] Resolve results against actual library track IDs.
-- [ ] Calculate duration and enforce constraints deterministically.
-- [ ] Preview proposed tracks before saving the playlist.
+- [x] Define a strict schema for search filters and constraints.
+- [x] Send only necessary library metadata to the local model.
+- [x] Validate model output and reject unknown fields/operators.
+- [x] Resolve results against actual library track IDs.
+- [x] Calculate duration and enforce constraints deterministically.
+- [x] Preview proposed tracks before saving the playlist.
 
 ### S7.3 — Metadata suggestions
-- [ ] Ask the model to propose values only from supplied evidence or clearly label uncertain inference.
-- [ ] Show old/proposed values side by side.
-- [ ] Allow editing, rejecting, or approving proposals.
-- [ ] Never silently write AI-generated metadata.
+- [x] Ask the model to propose values only from supplied evidence or clearly label uncertain inference.
+- [x] Show old/proposed values side by side.
+- [x] Allow editing, rejecting, or approving proposals.
+- [x] Never silently write AI-generated metadata.
 
 ### S7.4 — AI testing and integration
-- [ ] Test valid, malformed, empty, hallucinated, and unavailable-model responses.
-- [ ] Test requests with no matching tracks.
-- [ ] Test that no arbitrary code or filesystem operation can be generated.
-- [ ] Verify AI can be disabled without breaking the app.
+- [x] Test valid, malformed, empty, hallucinated, and unavailable-model responses.
+- [x] Test requests with no matching tracks.
+- [x] Test that no arbitrary code or filesystem operation can be generated.
+- [x] Verify AI can be disabled without breaking the app.
 
 **Exit gate:** At least one useful natural-language playlist workflow works with a local model, validates output, requires review, and degrades gracefully when AI is unavailable.
 

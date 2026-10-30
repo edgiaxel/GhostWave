@@ -9,12 +9,15 @@ export const HealthCleanupScreen: React.FC = () => {
     metadataProposals,
     approveProposal,
     rejectProposal,
+    editProposalValue,
+    generateAiMetadataProposals,
     applyApprovedProposals,
     applyRenameTemplate,
     removeTrackFromLibrary,
     setEditTrackModal,
     runHealthCheck,
     settings,
+    aiConnection,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'proposals' | 'renaming'>('overview');
@@ -23,6 +26,11 @@ export const HealthCleanupScreen: React.FC = () => {
   // Renaming Template State
   const [templatePattern, setTemplatePattern] = useState(settings.library.renamePattern || '{artist} - {title}');
   const [isApplyingRenames, setIsApplyingRenames] = useState(false);
+  const [isGeneratingAiMetadata, setIsGeneratingAiMetadata] = useState(false);
+
+  // Proposal editing state
+  const [editingProposalId, setEditingProposalId] = useState<string | null>(null);
+  const [editProposedText, setEditProposedText] = useState('');
 
   // Compute live rename previews
   const renamePreviews: RenamePreviewItem[] = useMemo(() => {
@@ -52,13 +60,36 @@ export const HealthCleanupScreen: React.FC = () => {
     setIsApplyingRenames(false);
   };
 
+  const handleGenerateAiProposals = async () => {
+    setIsGeneratingAiMetadata(true);
+    try {
+      await generateAiMetadataProposals();
+      setActiveTab('proposals');
+    } finally {
+      setIsGeneratingAiMetadata(false);
+    }
+  };
+
+  const handleStartEditProposal = (id: string, currentValue: string | number | string[]) => {
+    setEditingProposalId(id);
+    setEditProposedText(String(currentValue));
+  };
+
+  const handleSaveEditedProposal = (id: string) => {
+    if (editProposedText.trim()) {
+      editProposalValue(id, editProposedText.trim());
+    }
+    setEditingProposalId(null);
+    setEditProposedText('');
+  };
+
   return (
     <div className="flex flex-col w-full gap-6 pb-6">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-headline font-bold text-2xl text-on-surface">
-            Health & Cleanup
+            Health &amp; Cleanup
           </h1>
           <p className="text-xs text-on-surface-variant mt-0.5">
             Safe non-destructive metadata correction, duplicate detection, and file renaming
@@ -72,7 +103,7 @@ export const HealthCleanupScreen: React.FC = () => {
             title="Re-run health analysis on local library"
           >
             <span className="material-symbols-outlined text-base text-primary">sync</span>
-            <span>Run Health Audit</span>
+            <span>Run Audit</span>
           </button>
           <button
             onClick={handleApplyAllApproved}
@@ -289,26 +320,35 @@ export const HealthCleanupScreen: React.FC = () => {
 
       {/* TAB 2: PROPOSED TAG DIFFS */}
       {activeTab === 'proposals' && (
-        <div className="rounded-2xl bg-surface-container-low border border-outline-variant/20 overflow-hidden shadow-sm">
+        <div className="rounded-2xl bg-surface-container-low border border-outline-variant/20 overflow-hidden shadow-sm flex flex-col">
           <div className="p-4 border-b border-outline-variant/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="font-headline font-semibold text-sm text-on-surface">
-                Proposed Tag Diffs
+                Proposed Tag Diffs &amp; AI Suggestions
               </h2>
               <p className="text-[11px] text-outline">
-                Review and approve tag corrections extracted from filename heuristics before application
+                Review, edit, and approve tag corrections before application. GhostWave never silently writes AI metadata.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-full bg-surface-container text-secondary font-mono text-[11px] font-semibold">
-                {pendingProposalsCount} Pending
-              </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleGenerateAiProposals}
+                disabled={isGeneratingAiMetadata}
+                className="px-3.5 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium border border-outline-variant/30 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                title={aiConnection.isAvailable ? 'Generate metadata suggestions with local Gemma 4B' : 'Offline heuristic suggestions'}
+              >
+                <span className={`material-symbols-outlined text-sm text-primary ${isGeneratingAiMetadata ? 'animate-spin' : ''}`}>
+                  {isGeneratingAiMetadata ? 'sync' : 'auto_awesome'}
+                </span>
+                <span>{isGeneratingAiMetadata ? 'Analyzing Tags...' : 'AI Suggestions (Gemma 4B)'}</span>
+              </button>
+
               <button
                 onClick={handleApplyAllApproved}
-                disabled={approvedProposalsCount === 0}
-                className="px-3.5 py-1.5 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 disabled:opacity-40 transition-all shadow-sm"
+                className="px-3.5 py-1.5 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1"
               >
-                Apply Approved ({approvedProposalsCount})
+                <span className="material-symbols-outlined text-sm">check</span>
+                <span>Apply Approved ({approvedProposalsCount})</span>
               </button>
             </div>
           </div>
@@ -318,26 +358,30 @@ export const HealthCleanupScreen: React.FC = () => {
               <tr>
                 <th className="py-3 px-4">Track / File</th>
                 <th className="py-3 px-4">Field</th>
+                <th className="py-3 px-4">Source</th>
                 <th className="py-3 px-4">Current Value</th>
                 <th className="py-3 px-4">Proposed Value</th>
                 <th className="py-3 px-4 hidden sm:table-cell">Confidence</th>
-                <th className="py-3 px-4 text-right">Decision</th>
+                <th className="py-3 px-4 text-right">Review Decision</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
               {metadataProposals.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-xs text-on-surface-variant font-medium">
-                    Zero library defects or pending proposals detected.
+                  <td colSpan={7} className="py-8 text-center text-xs text-on-surface-variant font-medium">
+                    Zero pending proposals detected. Run Audit or click "AI Suggestions" above.
                   </td>
                 </tr>
               ) : (
                 metadataProposals.map((prop) => {
                   const trk = tracks.find((t) => t.id === prop.trackId);
+                  const isEditingThis = editingProposalId === prop.id;
+                  const isUncertain = prop.confidence < 0.7;
+
                   return (
                     <tr key={prop.id} className="hover:bg-surface-container/40 transition-colors">
                       <td className="py-3.5 px-4">
-                        <div className="flex flex-col min-w-0 max-w-[200px]">
+                        <div className="flex flex-col min-w-0 max-w-[180px]">
                           <span className="font-medium text-on-surface truncate">
                             {trk?.title || 'Unknown Title'}
                           </span>
@@ -350,17 +394,64 @@ export const HealthCleanupScreen: React.FC = () => {
                         {prop.field}
                       </td>
                       <td className="py-3.5 px-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
+                          prop.source === 'ai_gemma'
+                            ? 'bg-primary/15 text-primary'
+                            : 'bg-surface-container text-outline'
+                        }`}>
+                          {prop.source === 'ai_gemma' ? 'AI Gemma' : 'Filename Pattern'}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
                         <span className="px-2 py-0.5 rounded bg-error/10 text-error font-mono text-xs line-through">
                           {String(prop.currentValue || '(empty)')}
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="px-2 py-0.5 rounded bg-secondary/15 text-secondary font-mono text-xs font-semibold">
-                          {String(prop.proposedValue)}
-                        </span>
+                        {isEditingThis ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={editProposedText}
+                              onChange={(e) => setEditProposedText(e.target.value)}
+                              className="bg-surface-container border border-primary px-2 py-1 rounded text-xs font-mono text-on-surface outline-none w-36"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleSaveEditedProposal(prop.id)}
+                              className="px-2 py-1 rounded bg-primary text-on-primary text-[10px] font-semibold"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingProposalId(null)}
+                              className="px-1.5 py-1 text-outline hover:text-on-surface text-[10px]"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded bg-secondary/15 text-secondary font-mono text-xs font-semibold">
+                            {String(prop.proposedValue)}
+                          </span>
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 hidden sm:table-cell font-mono text-xs text-outline">
-                        {Math.round(prop.confidence * 100)}%
+                      <td className="py-3.5 px-4 hidden sm:table-cell">
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-semibold inline-flex items-center gap-1 ${
+                            isUncertain
+                              ? 'bg-tertiary/20 text-tertiary'
+                              : 'bg-secondary/15 text-secondary'
+                          }`}
+                          title={isUncertain ? 'Uncertain model inference. Please review carefully.' : 'High confidence evidence.'}
+                        >
+                          <span className="material-symbols-outlined text-[10px]">
+                            {isUncertain ? 'help' : 'verified'}
+                          </span>
+                          <span>
+                            {isUncertain ? 'Uncertain inference' : 'High confidence'} ({Math.round(prop.confidence * 100)}%)
+                          </span>
+                        </span>
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         {prop.status === 'applied' ? (
@@ -369,17 +460,44 @@ export const HealthCleanupScreen: React.FC = () => {
                             Applied
                           </span>
                         ) : prop.status === 'approved' ? (
-                          <span className="inline-flex items-center gap-1 text-primary font-mono text-xs font-semibold">
-                            <span className="material-symbols-outlined text-sm">check_circle</span>
-                            Approved
-                          </span>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className="inline-flex items-center gap-1 text-primary font-mono text-xs font-semibold">
+                              <span className="material-symbols-outlined text-sm">check_circle</span>
+                              Approved
+                            </span>
+                            <button
+                              onClick={() => rejectProposal(prop.id)}
+                              className="p-1 text-outline hover:text-error transition-colors"
+                              title="Revert to rejected"
+                            >
+                              <span className="material-symbols-outlined text-sm">close</span>
+                            </button>
+                          </div>
                         ) : prop.status === 'rejected' ? (
-                          <span className="inline-flex items-center gap-1 text-outline font-mono text-xs">
-                            <span className="material-symbols-outlined text-sm">cancel</span>
-                            Rejected
-                          </span>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className="inline-flex items-center gap-1 text-outline font-mono text-xs">
+                              <span className="material-symbols-outlined text-sm">cancel</span>
+                              Rejected
+                            </span>
+                            <button
+                              onClick={() => approveProposal(prop.id)}
+                              className="p-1 text-outline hover:text-primary transition-colors"
+                              title="Reconsider and approve"
+                            >
+                              <span className="material-symbols-outlined text-sm">undo</span>
+                            </button>
+                          </div>
                         ) : (
                           <div className="flex items-center justify-end gap-1.5">
+                            {!isEditingThis && (
+                              <button
+                                onClick={() => handleStartEditProposal(prop.id, prop.proposedValue)}
+                                className="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium border border-outline-variant/30 transition-colors"
+                                title="Edit this proposal value before approving"
+                              >
+                                Edit
+                              </button>
+                            )}
                             <button
                               onClick={() => approveProposal(prop.id)}
                               className="px-3 py-1 rounded-full bg-secondary/20 hover:bg-secondary/30 text-secondary text-xs font-semibold transition-colors"

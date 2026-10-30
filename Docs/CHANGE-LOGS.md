@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.9.0] - S7.2, S7.3, S7.4: Natural-Language Playlists, Metadata Proposals, and AI Integration Testing (2026-10-30)
+
+### Added
+- **S7.2: Natural-Language Playlist Query (`src/services/ai/AiPlaylistService.ts`, `src/screens/LocalAiScreen.tsx`)**:
+  - `PLAYLIST_QUERY_SCHEMA`: Strict JSON Schema defining allowed search filters (`genres`, `artists`, `albums`, `formats`, `minBitrateKbps`, `yearMin`, `yearMax`, `keywords`) and constraints (`maxDurationMinutes`, `minDurationMinutes`, `maxTracks`) with `additionalProperties: false`.
+  - `serializeLibrary`: Compact metadata serialization sending only necessary catalog fields (`id`, `title`, `artist`, `album`, `genre`, `durationSeconds`, `format`, `bitrateKbps`, `year`). Omit local file paths, buffer data, and audio bytes.
+  - `validatePlan`: Strict schema validator ensuring valid types, required fields (`name`, `matchedTrackIds`, `explanation`), and dropping unexpected properties.
+  - `resolveTracks`: Deterministic track resolution against indexed library IDs. Drops hallucinated or nonexistent IDs and reports them in `hallucinatedTrackIds`.
+  - Deterministic constraint enforcement: Calculates cumulative durations and caps tracks to stay within `maxDurationMinutes`, never trusting model arithmetic. Enforces `maxTracks` limits deterministically.
+  - `LocalAiScreen`: Interactive natural-language playlist curation UI with editable crate title, rationale, duration, track count, filter chips, hallucination warning pill, JSON Schema inspection, and one-click \"Save Crate\" action saving the playlist into IndexedDB.
+  - Offline fallback: Deterministic catalog matching when Ollama is offline or unconfigured, guaranteeing non-breaking operation.
+- **S7.3: Local AI Metadata Suggestions (`src/services/ai/AiMetadataService.ts`, `src/screens/HealthCleanupScreen.tsx`)**:
+  - `AI_METADATA_SCHEMA`: Strict proposal schema covering `title`, `artist`, `album`, `genre`, `year`, and `trackNumber`.
+  - `getTracksNeedingAttention` & `serializeTrackEvidence`: Identifies tracks with missing or generic tags and formats compact evidence (filename, size, format, current tags).
+  - Explicit confidence scoring & uncertain inference labeling: Classifies model confidence scores and highlights inferences below 0.7 with an `Uncertain inference` badge to alert the user.
+  - Side-by-side diff table: Displays current value (strikethrough) and proposed value side-by-side with origin badges (`AI Gemma` vs `Filename Pattern`).
+  - Safe user review & inline editing: Supports in-place editing of proposed values via `editProposalValue` before approval. All proposals remain strictly `pending` and are never silently written to files or IndexedDB without explicit user approval.
+- **S7.4: AI Testing, Integration & Multi-Run Workflow Verification (`src/test/s7-local-ai.test.tsx`)**:
+  - Valid, malformed, empty, hallucinated, and unavailable model responses: Tested syntax error recovery, 0-match results, 100% fake track ID drops, and offline network failure degradation.
+  - Security invariant: Verified model output cannot execute arbitrary shell code or perform directory traversal (`../../etc/passwd` inert string handling).
+  - Disabled AI verification: App core remains 100% functional with local AI disabled.
+  - Multi-run workflow verification: Ran 10 sequential query workflows across varied prompts (\"Fast electronic workout tracks in FLAC\", \"Dark ambient synth under 30 minutes\", \"Acoustic chill evening mix\", \"Lossless 24-bit FLAC tracks\", etc.) ensuring 100% determinism, schema compliance, duration limits, and zero memory leaks.
+  - Live model integration test: Live query against running Ollama (`gemma3:4b`) with timeout guards to prevent test suite stalling.
+  - All 73 tests passing across all 7 test files with clean production build (`npm run build`).
+
+---
+
 ## [0.8.0] - S7.1: Local AI Provider Interface, Setup & Core Workflow Fixes (2026-10-30)
 
 ### Fixed
