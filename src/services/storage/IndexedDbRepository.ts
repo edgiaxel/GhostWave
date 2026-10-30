@@ -1,7 +1,7 @@
 import { Track, AppSettings, Playlist } from '../../types';
 
 const DB_NAME = 'ghostwave_library';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const TRACKS_STORE = 'tracks';
 const BLOBS_STORE = 'blobs';
 const SETTINGS_STORE = 'settings';
@@ -15,6 +15,7 @@ export class IndexedDbRepository {
 
     this.dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
       if (typeof indexedDB === 'undefined') {
+        this.dbPromise = null;
         reject(new Error('IndexedDB is not supported in this environment.'));
         return;
       }
@@ -51,7 +52,13 @@ export class IndexedDbRepository {
         resolve(request.result);
       };
 
+      request.onblocked = () => {
+        this.dbPromise = null;
+        console.warn('GhostWave IndexedDB upgrade blocked by open connection.');
+      };
+
       request.onerror = () => {
+        this.dbPromise = null;
         reject(request.error || new Error('Failed to open GhostWave IndexedDB database.'));
       };
     });
@@ -185,6 +192,10 @@ export class IndexedDbRepository {
 
   async savePlaylist(playlist: Playlist): Promise<void> {
     const db = await this.openDatabase();
+    if (!db.objectStoreNames.contains(PLAYLISTS_STORE)) {
+      console.warn('GhostWave: playlists store not yet initialized in IndexedDB.');
+      return;
+    }
 
     return new Promise<void>((resolve, reject) => {
       const tx = db.transaction(PLAYLISTS_STORE, 'readwrite');
@@ -199,6 +210,9 @@ export class IndexedDbRepository {
 
   async deletePlaylist(id: string): Promise<void> {
     const db = await this.openDatabase();
+    if (!db.objectStoreNames.contains(PLAYLISTS_STORE)) {
+      return;
+    }
 
     return new Promise<void>((resolve, reject) => {
       const tx = db.transaction(PLAYLISTS_STORE, 'readwrite');

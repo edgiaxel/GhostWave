@@ -1,39 +1,122 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { AppSettings } from '../types';
+import { DEFAULT_OLLAMA_ENDPOINT, DEFAULT_AI_MODEL } from '../services/ai/OllamaClient';
 
 export const SettingsScreen: React.FC = () => {
-  const { settings, updateSettings, toggleTheme, addToast } = useApp();
-  const [endpoint, setEndpoint] = useState(settings.localAi.endpoint);
-  const [model, setModel] = useState(settings.localAi.model);
+  const {
+    settings,
+    updateSettings,
+    toggleTheme,
+    addToast,
+    aiConnection,
+    aiInstalledModels,
+    testAiConnection,
+    discoverAiModels,
+    sendTestAiPrompt,
+  } = useApp();
+
+  const [endpoint, setEndpoint] = useState(settings.localAi.endpoint || DEFAULT_OLLAMA_ENDPOINT);
+  const [model, setModel] = useState(settings.localAi.model || DEFAULT_AI_MODEL);
   const [isTestingAi, setIsTestingAi] = useState(false);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [testPromptText, setTestPromptText] = useState('Verify model availability for GhostWave');
+  const [isSendingPrompt, setIsSendingPrompt] = useState(false);
+  const [testPromptResult, setTestPromptResult] = useState<{
+    response: string;
+    durationMs: number;
+    model: string;
+  } | null>(null);
+
+  // Proactively check connection on screen mount if not yet checked
+  useEffect(() => {
+    if (aiConnection.state === 'unconfigured') {
+      testAiConnection(endpoint).catch(() => {});
+      discoverAiModels(endpoint).catch(() => {});
+    }
+  }, []);
 
   const handleSaveAi = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettings({
       localAi: {
         ...settings.localAi,
-        endpoint,
-        model,
+        endpoint: endpoint.trim() || DEFAULT_OLLAMA_ENDPOINT,
+        model: model.trim() || DEFAULT_AI_MODEL,
       },
     });
     addToast({
       title: 'Settings Saved',
-      message: 'Local AI configuration updated.',
+      message: 'Local AI configuration saved to local store.',
       type: 'success',
     });
   };
 
-  const handleTestConnection = () => {
+  const handleTestConnection = async () => {
     setIsTestingAi(true);
-    setTimeout(() => {
+    setTestPromptResult(null);
+    try {
+      const status = await testAiConnection(endpoint);
+      if (status.isAvailable) {
+        addToast({
+          title: 'Ollama Connected',
+          message: `Connected to ${status.endpoint} (v${status.version || 'unknown'}) in ${status.latencyMs}ms.`,
+          type: 'success',
+        });
+        await handleDiscoverModels();
+      } else {
+        addToast({
+          title: status.state === 'timeout' ? 'Connection Timeout' : 'Ollama Offline',
+          message: status.errorMessage || 'Unable to connect to local Ollama instance.',
+          type: 'warning',
+        });
+      }
+    } finally {
       setIsTestingAi(false);
+    }
+  };
+
+  const handleDiscoverModels = async () => {
+    setIsDiscovering(true);
+    try {
+      const models = await discoverAiModels(endpoint);
+      if (models.length > 0) {
+        // Auto-select gemma3:4b if installed and current model is default
+        const hasGemma3 = models.some((m) => m.name.includes('gemma3:4b'));
+        if (hasGemma3 && (!model || model === 'gemma2:2b')) {
+          setModel('gemma3:4b');
+        }
+      }
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
+  const handleSendTestPrompt = async () => {
+    if (!testPromptText.trim()) return;
+    setIsSendingPrompt(true);
+    try {
+      const result = await sendTestAiPrompt(testPromptText, model);
+      setTestPromptResult({
+        response: result.response,
+        durationMs: result.durationMs,
+        model: result.model,
+      });
       addToast({
-        title: 'Connection Verified',
-        message: `Connected to ${endpoint}. Model ${model} is ready.`,
+        title: 'Model Responded',
+        message: `${result.model} replied in ${result.durationMs}ms.`,
         type: 'success',
       });
-    }, 600);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Prompt execution failed.';
+      addToast({
+        title: 'Inference Error',
+        message: msg,
+        type: 'error',
+      });
+    } finally {
+      setIsSendingPrompt(false);
+    }
   };
 
   const accents: Array<{ id: AppSettings['accentPalette']; label: string; color: string }> = [
@@ -121,46 +204,119 @@ export const SettingsScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Local AI Configuration */}
+        {/* S7.1: Local AI Configuration & Provider Setup */}
         <div className="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-5 shadow-sm">
-          <div className="flex items-center gap-2 border-b border-outline-variant/15 pb-3">
-            <span className="material-symbols-outlined text-tertiary text-lg">smart_toy</span>
-            <h2 className="font-headline font-semibold text-sm text-on-surface">Local AI Runtime</h2>
+          <div className="flex items-center justify-between border-b border-outline-variant/15 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-tertiary text-lg">smart_toy</span>
+              <h2 className="font-headline font-semibold text-sm text-on-surface">Local AI Runtime (S7.1)</h2>
+            </div>
+
+            {/* Live Status Indicator */}
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  aiConnection.state === 'connected'
+                    ? 'bg-secondary animate-pulse'
+                    : aiConnection.state === 'checking'
+                    ? 'bg-yellow-400 animate-spin'
+                    : aiConnection.state === 'timeout'
+                    ? 'bg-orange-500'
+                    : 'bg-outline'
+                }`}
+              />
+              <span className="capitalize text-on-surface-variant text-[11px]">
+                {aiConnection.state === 'connected'
+                  ? `Connected (${aiConnection.latencyMs}ms)`
+                  : aiConnection.state}
+              </span>
+            </div>
           </div>
 
-          <form onSubmit={handleSaveAi} className="flex flex-col gap-3.5">
+          <form onSubmit={handleSaveAi} className="flex flex-col gap-4">
+            {/* Endpoint */}
             <div className="flex flex-col gap-1">
-              <label htmlFor="ollama-endpoint" className="text-xs text-on-surface font-medium">
-                Ollama Endpoint
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="ollama-endpoint" className="text-xs text-on-surface font-medium">
+                  Ollama Endpoint
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setEndpoint(DEFAULT_OLLAMA_ENDPOINT)}
+                  className="text-[10px] text-primary hover:underline"
+                >
+                  Reset default (127.0.0.1)
+                </button>
+              </div>
               <input
                 id="ollama-endpoint"
                 type="text"
                 value={endpoint}
                 onChange={(e) => setEndpoint(e.target.value)}
-                className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-primary/50"
+                placeholder="http://127.0.0.1:11434"
+                className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-primary/50 font-mono"
               />
+              <span className="text-[10px] text-outline">
+                Note: Browsers treat loopback addresses (127.0.0.1 and localhost) as potentially trustworthy local origins.
+              </span>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label htmlFor="ollama-model" className="text-xs text-on-surface font-medium">
-                Model Name
-              </label>
-              <input
-                id="ollama-model"
-                type="text"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-primary/50"
-              />
+            {/* Model Selection */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="ollama-model" className="text-xs text-on-surface font-medium">
+                  Inference Model
+                </label>
+                <button
+                  type="button"
+                  onClick={handleDiscoverModels}
+                  disabled={isDiscovering}
+                  className="text-[10px] text-tertiary hover:underline flex items-center gap-1 disabled:opacity-40"
+                >
+                  <span className={`material-symbols-outlined text-[12px] ${isDiscovering ? 'animate-spin' : ''}`}>
+                    sync
+                  </span>
+                  <span>Discover installed models</span>
+                </button>
+              </div>
+
+              {aiInstalledModels.length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  <select
+                    id="ollama-model"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-primary/50"
+                  >
+                    {aiInstalledModels.map((m) => (
+                      <option key={m.name} value={m.name}>
+                        {m.name} {m.parameterSize ? `(${m.parameterSize})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <input
+                  id="ollama-model"
+                  type="text"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="gemma3:4b"
+                  className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-primary/50 font-mono"
+                />
+              )}
+              <span className="text-[10px] text-outline">
+                Recommended candidate: <span className="text-primary font-mono font-medium">gemma3:4b</span> (supports application-managed JSON Schema dispatch).
+              </span>
             </div>
 
-            <div className="flex items-center gap-2.5 pt-2">
+            {/* Connection Actions */}
+            <div className="flex items-center gap-2.5 pt-1">
               <button
                 type="submit"
                 className="px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 transition-all shadow-sm"
               >
-                Save
+                Save Settings
               </button>
               <button
                 type="button"
@@ -171,10 +327,67 @@ export const SettingsScreen: React.FC = () => {
                 <span className={`material-symbols-outlined text-sm ${isTestingAi ? 'animate-spin' : ''}`}>
                   sync
                 </span>
-                <span>Test Connection</span>
+                <span>{isTestingAi ? 'Testing...' : 'Test Connection'}</span>
               </button>
             </div>
           </form>
+
+          {/* Test Prompt & Response Display */}
+          <div className="p-4 rounded-xl bg-surface-container/60 border border-outline-variant/20 flex flex-col gap-3">
+            <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm text-primary">terminal</span>
+              Inference Test Prompt
+            </span>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={testPromptText}
+                onChange={(e) => setTestPromptText(e.target.value)}
+                placeholder="Ask model to respond..."
+                className="flex-1 bg-surface-container text-on-surface text-xs px-3 py-2 rounded-lg border border-outline-variant/20 outline-none focus:border-primary/50"
+              />
+              <button
+                type="button"
+                onClick={handleSendTestPrompt}
+                disabled={isSendingPrompt || !testPromptText.trim()}
+                className="px-3.5 py-2 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary text-xs font-semibold transition-colors disabled:opacity-40 flex items-center gap-1 shrink-0"
+              >
+                <span className={`material-symbols-outlined text-sm ${isSendingPrompt ? 'animate-spin' : ''}`}>
+                  send
+                </span>
+                <span>Send</span>
+              </button>
+            </div>
+
+            {testPromptResult && (
+              <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/20 flex flex-col gap-1.5 font-mono text-xs">
+                <div className="flex items-center justify-between text-[11px] text-outline">
+                  <span>Model: {testPromptResult.model}</span>
+                  <span>Latency: {testPromptResult.durationMs}ms</span>
+                </div>
+                <p className="text-on-surface font-sans text-xs whitespace-pre-wrap leading-relaxed">
+                  {testPromptResult.response}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Offline & Graceful Degradation Guide */}
+          <div className="p-4 rounded-xl bg-surface-container/40 border border-outline-variant/15 flex flex-col gap-2 text-xs text-on-surface-variant">
+            <span className="font-semibold text-on-surface flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm text-secondary">info</span>
+              Model Setup & Offline Operation
+            </span>
+            <p className="text-[11px] leading-relaxed">
+              GhostWave functions completely offline. Audio playback, visualizers, library indexing, and crates do not require AI.
+            </p>
+            <div className="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/20 font-mono text-[11px] flex flex-col gap-1 text-outline">
+              <div className="text-secondary font-semibold">Terminal setup:</div>
+              <div>$ ollama serve</div>
+              <div>$ ollama pull gemma3:4b</div>
+            </div>
+          </div>
         </div>
 
         {/* Platform Capabilities */}

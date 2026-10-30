@@ -6,6 +6,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.8.0] - S7.1: Local AI Provider Interface, Setup & Core Workflow Fixes (2026-10-30)
+
+### Fixed
+- **Core Workflow: Rescan & File Scanning Hangs Resolved**:
+  - Fixed infinite scanning banner (`Scanning: Verifying local index... 0% (0/0)`) by wrapping `importAudioFiles` and `rescanLibrary` in `try ... catch ... finally` blocks in `AppContext.tsx`.
+  - Guaranteed `setIsScanning(false)` and `isScanning: false` progress resets unconditionally upon completion, failure, or cancellation.
+  - Added immediate guard clauses for empty track lists (`tracks.length === 0`) and empty file selections, returning instantly with friendly user toasts without entering an active scan loop.
+- **Core Workflow: Playlist Creation Dialog Fix**:
+  - Fixed issue where clicking the create button in the "Create New Playlist" dialog failed to add playlists on migrated PC databases.
+  - Upgraded IndexedDB schema version to 3 (`DB_VERSION = 3`) in `IndexedDbRepository.ts`, ensuring the `playlists` object store is reliably initialized on databases migrated from previous versions.
+  - Added store existence guards and try/catch recovery in `savePlaylist`, `deletePlaylist`, and `createPlaylist`, guaranteeing in-memory state updates and dialog dismissal regardless of storage latency.
+  - Improved `PlaylistsScreen.tsx` form submission with robust error handling and form resets.
+- **File System Platform Resilience (`src/services/platform/WebFilePlatform.ts`)**:
+  - Handled user cancellations and abort exceptions in `selectAudioFiles` and `selectFolder` across desktop browsers.
+  - Normalized async directory iteration across standard and browser-specific `FileSystemDirectoryHandle` APIs (`.values()` fallback).
+  - Ensured manual `<input type="file">` elements are cleanly detached from the DOM on both selection and cancellation.
+- **Bounded Test Execution Limits (`vite.config.ts`)**:
+  - Configured Vitest with `testTimeout: 5000`, `hookTimeout: 4000`, and `teardownTimeout: 3000` to terminate and skip lingering tests promptly without hanging prompts.
+
+### Added
+- **S7.1.1: Local AI Provider Interface (`src/services/ai/LocalAiProvider.ts`)**:
+  - Defined `LocalAiProvider` interface specifying `checkConnection`, `listModels`, `generate`, and endpoint configuration.
+  - Defined explicit connection lifecycle states: `connected`, `offline`, `timeout`, `error`, `unconfigured`, and `checking`.
+  - Established application-managed tool dispatch contract supporting both raw `'json'` and structured JSON Schema objects in `GenerateOptions.format`.
+- **S7.1.2: Ollama Client Implementation (`src/services/ai/OllamaClient.ts`)**:
+  - Implemented `OllamaClient` communicating with local Ollama daemon over HTTP loopback (`http://127.0.0.1:11434`).
+  - Added URL normalization, trailing slash trimming, and default fallback to loopback origin.
+  - Configured strict request timeouts using `AbortController` (4s connection check, 5s model discovery, 30s generation).
+  - Supported Ollama's schema-based format parameter, parsing returned JSON output deterministically into `parsedJson`.
+- **S7.1.3: Ollama Connection Testing**:
+  - Probes `/api/version` and `/api/tags` with real-time round-trip latency tracking (`performance.now()`).
+  - Differentiates timeout (`AbortError`), offline (`TypeError: Failed to fetch`), and server errors with descriptive diagnostic messages.
+- **S7.1.4: Installed Model Discovery & Model Selection**:
+  - Auto-discovers installed models via `GET /api/tags`, parsing model names, parameter sizes, families, and quantization levels.
+  - Pre-configures and selects `gemma3:4b` as the verified default model candidate.
+- **S7.1.5: Offline Degradation & Non-AI Preservation**:
+  - Verified that all core non-AI functions (audio playback, queue management, visualizer, crates, and tag editing) remain 100% operational when Ollama is offline or unconfigured.
+- **S7.1.6: Settings UI Integration (`src/screens/SettingsScreen.tsx`, `LocalAiScreen.tsx`)**:
+  - Live status indicator badge reflecting real connection health and measured latency.
+  - "Test Connection" button providing instant feedback on Ollama connectivity.
+  - Model selector dropdown populated dynamically from discovered local models with fallback input.
+  - Interactive "Inference Test Prompt" console to test live generation and display response text, latency, and model name.
+  - Terminal setup guide (`ollama serve`, `ollama pull gemma3:4b`) and explanation of browser loopback origin security rules.
+- **S7.1.7: Unit and Integration Test Suite (`src/test/s7-local-ai.test.tsx`)**:
+  - Created 12 comprehensive unit and integration tests covering endpoint normalization, connection status, timeout handling, offline error states, model discovery, JSON Schema format dispatch, UI integration, empty rescan safety, and playlist dialog submission.
+  - 60 passing tests across 7 test suites with 0 errors.
+
+---
+
+## [0.7.1] - S7.0: Technical Verification & AI Architecture (2026-10-30)
+
+### Added
+- **S7.0: Technical Verification & AI Architecture Review (`Docs/S7.0-TECHNICAL-REVIEW.md`)**:
+  - Comprehensive audit of existing storage, metadata, and health services (`IndexedDbRepository`, `LibraryHealthService`, `MetadataEditService`, `PlaybackEngine`) to ensure zero duplication of domain logic in the AI layer.
+  - Verified host Ollama runtime (`ollama version 0.34.1`) and installed model `gemma3:4b` (3.9B parameters, Q4_K_M quantization, 3.4 GB disk size, 128k context window).
+  - Empirical benchmarking across 8 capabilities: demonstrated high accuracy in basic instructions, structured JSON, tool argument parsing, multi-step proposals, empty-result handling without hallucinations, and sub-second warm inference (~0.64s to 1.43s) on RTX 3050 GPU.
+  - Identified critical runtime constraint: Ollama's experimental native `tools` parameter returns HTTP 400 for `gemma3:4b`; architected and verified prompt-contract structured JSON tool dispatch using stable `"format": "json"`.
+  - Designed the complete `LocalAiProvider` interface, bounded `AgentOrchestrator` execution loop (5 turns max, 30s timeout, abort controller), deterministic tool registry (`search_library`, `get_library_stats`, `propose_playlist`), and natural-language playlist workflow.
+  - Formulated partner integration recommendations for Hacktoberfest 2026 Week 4 Challenge (Gemma, Render, DigitalOcean, MusicBrainz, Sentry, Entire) and evaluated remaining stages (S7 to S12).
+
+---
+
 ## [0.7.0] - S6: Halloween Visualizer, Slide-Up Drawer & Resizable Fixed Shell (2026-10-30)
 
 ### Added

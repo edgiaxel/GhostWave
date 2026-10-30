@@ -255,11 +255,11 @@ Add a limit if a test takes longer than expected, kill it and just skip it and f
 **Goal:** Add useful local-model capabilities without making the core dependent on AI.
 
 ### S7.1 — AI provider interface and setup
-- [ ] Define a provider interface for local inference.
-- [ ] Add Ollama connection configuration and connection test.
-- [ ] Explain model installation and configuration.
-- [ ] Show unavailable, timeout, and invalid-response states.
-- [ ] Keep all non-AI functions usable if no model is configured.
+- [x] Define a provider interface for local inference.
+- [x] Add Ollama connection configuration and connection test.
+- [x] Explain model installation and configuration.
+- [x] Show unavailable, timeout, and invalid-response states.
+- [x] Keep all non-AI functions usable if no model is configured.
 
 ### S7.2 — Natural-language playlist query
 - [ ] Define a strict schema for search filters and constraints.

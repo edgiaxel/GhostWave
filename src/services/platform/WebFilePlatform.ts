@@ -49,7 +49,7 @@ export class WebFilePlatform implements FileOperationsPlatform {
         return files;
       } catch (err: unknown) {
         // AbortError indicates user cancelled selection
-        if (err instanceof Error && err.name === 'AbortError') {
+        if (err instanceof Error && (err.name === 'AbortError' || err.message.toLowerCase().includes('abort') || err.message.toLowerCase().includes('cancel'))) {
           return [];
         }
         // Fall back to input element on permission issues
@@ -64,14 +64,20 @@ export class WebFilePlatform implements FileOperationsPlatform {
       input.accept = '.mp3,.flac,.ogg,.wav,.m4a,.aac,.opus,audio/*';
       input.style.display = 'none';
 
+      const cleanup = () => {
+        if (input.parentNode) {
+          document.body.removeChild(input);
+        }
+      };
+
       input.onchange = () => {
         const files = input.files ? Array.from(input.files) : [];
-        document.body.removeChild(input);
+        cleanup();
         resolve(files);
       };
 
       input.oncancel = () => {
-        document.body.removeChild(input);
+        cleanup();
         resolve([]);
       };
 
@@ -94,7 +100,7 @@ export class WebFilePlatform implements FileOperationsPlatform {
         await this.readDirectoryRecursive(dirHandle, files);
         return files;
       } catch (err: unknown) {
-        if (err instanceof Error && err.name === 'AbortError') {
+        if (err instanceof Error && (err.name === 'AbortError' || err.message.toLowerCase().includes('abort') || err.message.toLowerCase().includes('cancel'))) {
           return [];
         }
       }
@@ -109,14 +115,20 @@ export class WebFilePlatform implements FileOperationsPlatform {
       input.setAttribute('directory', '');
       input.style.display = 'none';
 
+      const cleanup = () => {
+        if (input.parentNode) {
+          document.body.removeChild(input);
+        }
+      };
+
       input.onchange = () => {
         const files = input.files ? Array.from(input.files) : [];
-        document.body.removeChild(input);
+        cleanup();
         resolve(files);
       };
 
       input.oncancel = () => {
-        document.body.removeChild(input);
+        cleanup();
         resolve([]);
       };
 
@@ -129,15 +141,23 @@ export class WebFilePlatform implements FileOperationsPlatform {
     dirHandle: FileSystemDirectoryHandle,
     collectedFiles: File[]
   ): Promise<void> {
-    for await (const entry of (dirHandle as unknown as AsyncIterable<FileSystemHandle>)) {
-      if (entry.kind === 'file') {
-        const fileHandle = entry as unknown as FileSystemFileHandle;
-        const file = await fileHandle.getFile();
-        collectedFiles.push(file);
-      } else if (entry.kind === 'directory') {
-        const subDir = entry as unknown as FileSystemDirectoryHandle;
-        await this.readDirectoryRecursive(subDir, collectedFiles);
+    try {
+      const iterator = typeof (dirHandle as unknown as { values?: () => AsyncIterable<FileSystemHandle> }).values === 'function'
+        ? (dirHandle as unknown as { values: () => AsyncIterable<FileSystemHandle> }).values()
+        : (dirHandle as unknown as AsyncIterable<FileSystemHandle>);
+
+      for await (const entry of iterator) {
+        if (entry.kind === 'file') {
+          const fileHandle = entry as unknown as FileSystemFileHandle;
+          const file = await fileHandle.getFile();
+          collectedFiles.push(file);
+        } else if (entry.kind === 'directory') {
+          const subDir = entry as unknown as FileSystemDirectoryHandle;
+          await this.readDirectoryRecursive(subDir, collectedFiles);
+        }
       }
+    } catch (err) {
+      console.warn('GhostWave: directory entry read issue:', err);
     }
   }
 

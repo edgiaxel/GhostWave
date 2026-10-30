@@ -93,15 +93,27 @@ export const PlaylistsScreen: React.FC = () => {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    const name = formData.name.trim();
+    if (!name) return;
 
-    await createPlaylist(
-      formData.name.trim(),
-      formData.description.trim(),
-      formData.icon,
-      formData.accentColor
-    );
-    setShowCreateModal(false);
+    try {
+      await createPlaylist(
+        name,
+        formData.description.trim(),
+        formData.icon,
+        formData.accentColor
+      );
+      setShowCreateModal(false);
+      setFormData({
+        name: '',
+        description: '',
+        icon: 'queue_music',
+        accentColor: 'witch-violet',
+      });
+    } catch (err) {
+      console.error('Failed to create playlist:', err);
+      setShowCreateModal(false);
+    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {

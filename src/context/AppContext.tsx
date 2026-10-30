@@ -19,6 +19,17 @@ import { LibraryScanner } from '../services/scanner/LibraryScanner';
 import { PlaybackEngine } from '../services/playback/PlaybackEngine';
 import { LibraryHealthService } from '../services/health/LibraryHealthService';
 import { MetadataEditService } from '../services/health/MetadataEditService';
+import {
+  ollamaClient,
+  OllamaClient,
+  DEFAULT_OLLAMA_ENDPOINT,
+  DEFAULT_AI_MODEL,
+} from '../services/ai/OllamaClient';
+import {
+  ConnectionStatus,
+  ModelInfo,
+  GenerateResult,
+} from '../services/ai/LocalAiProvider';
 
 export interface ToastMessage {
   id: string;
@@ -97,6 +108,12 @@ interface AppContextType {
   removeToast: (id: string) => void;
   activeModal: string | null;
   setActiveModal: (modal: string | null) => void;
+  aiConnection: ConnectionStatus;
+  aiInstalledModels: ModelInfo[];
+  testAiConnection: (endpointOverride?: string) => Promise<ConnectionStatus>;
+  discoverAiModels: (endpointOverride?: string) => Promise<ModelInfo[]>;
+  sendTestAiPrompt: (prompt: string, modelOverride?: string) => Promise<GenerateResult>;
+  ollamaClient: OllamaClient;
 }
 
 const INITIAL_SETTINGS: AppSettings = {
@@ -104,9 +121,9 @@ const INITIAL_SETTINGS: AppSettings = {
   accentPalette: 'witch-violet',
   localAi: {
     enabled: true,
-    endpoint: 'http://127.0.0.1:11434',
-    model: 'gemma2:2b',
-    status: 'connected',
+    endpoint: DEFAULT_OLLAMA_ENDPOINT,
+    model: DEFAULT_AI_MODEL,
+    status: 'disconnected',
   },
   onlineEnrichment: {
     enabled: false,
@@ -215,6 +232,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [activeModal, setActiveModal] = useState<string | null>(null);
+
+  // S7.1 Local AI state
+  const [aiConnection, setAiConnection] = useState<ConnectionStatus>({
+    isAvailable: false,
+    endpoint: settings.localAi.endpoint || DEFAULT_OLLAMA_ENDPOINT,
+    state: 'unconfigured',
+  });
+  const [aiInstalledModels, setAiInstalledModels] = useState<ModelInfo[]>([]);
 
   // Playback Queue state (S3.2)
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -681,7 +706,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: Date.now(),
       };
 
-      await dbRepository.savePlaylist(newPlaylist);
+      try {
+        await dbRepository.savePlaylist(newPlaylist);
+      } catch (err) {
+        console.warn('GhostWave: IndexedDB playlist save fallback:', err);
+      }
       setPlaylists((prev) => [newPlaylist, ...prev]);
       setSelectedPlaylistId(newPlaylist.id);
 
@@ -1059,47 +1088,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
    */
   const importAudioFiles = useCallback(
     async (files: File[]): Promise<ScanReport> => {
-      setIsScanning(true);
-      const platform = getPlatform() as WebFilePlatform;
-      const scanner = new LibraryScanner(dbRepository, platform);
+      if (!files || files.length === 0) {
+        setIsScanning(false);
+        setScanProgress({ scanned: 0, total: 0, currentFile: '', isScanning: false });
+        return {
+          added: 0,
+          updated: 0,
+          skipped: 0,
+          unsupported: 0,
+          unreadable: 0,
+          tracks: [],
+          errors: [],
+        };
+      }
 
-      const report = await scanner.scanFiles(files, (progress) => {
-        setScanProgress(progress);
+      setIsScanning(true);
+      setScanProgress({
+        scanned: 0,
+        total: files.length,
+        currentFile: 'Verifying files...',
+        isScanning: true,
       });
 
-      // Reload merged tracks from IndexedDB
-      const updatedList = await dbRepository.getAllTracks();
-      setTracks(updatedList);
-      if (updatedList.length > 0 && !selectedTrack) {
-        setSelectedTrack(updatedList[0]);
-      }
-      setIsScanning(false);
+      try {
+        const platform = getPlatform() as WebFilePlatform;
+        const scanner = new LibraryScanner(dbRepository, platform);
 
-      if (report.added > 0 || report.updated > 0) {
-        addToast({
-          title: 'Import Complete',
-          message: `Indexed ${report.added} new track${report.added === 1 ? '' : 's'}${
-            report.updated > 0 ? ` and updated ${report.updated}` : ''
-          }.`,
-          type: 'success',
+        const report = await scanner.scanFiles(files, (progress) => {
+          setScanProgress(progress);
         });
-      } else if (report.unsupported > 0 && report.added === 0) {
-        addToast({
-          title: 'No Audio Files Found',
-          message: `Skipped ${report.unsupported} unsupported non-audio file${
-            report.unsupported === 1 ? '' : 's'
-          }.`,
-          type: 'warning',
-        });
-      } else {
-        addToast({
-          title: 'Scan Finished',
-          message: 'All selected files already exist in your local library index.',
-          type: 'info',
-        });
-      }
 
-      return report;
+        // Reload merged tracks from IndexedDB
+        const updatedList = await dbRepository.getAllTracks();
+        setTracks(updatedList);
+        if (updatedList.length > 0 && !selectedTrack) {
+          setSelectedTrack(updatedList[0]);
+        }
+
+        if (report.added > 0 || report.updated > 0) {
+          addToast({
+            title: 'Import Complete',
+            message: `Indexed ${report.added} new track${report.added === 1 ? '' : 's'}${
+              report.updated > 0 ? ` and updated ${report.updated}` : ''
+            }.`,
+            type: 'success',
+          });
+        } else if (report.unsupported > 0 && report.added === 0) {
+          addToast({
+            title: 'No Audio Files Found',
+            message: `Skipped ${report.unsupported} unsupported non-audio file${
+              report.unsupported === 1 ? '' : 's'
+            }.`,
+            type: 'warning',
+          });
+        } else {
+          addToast({
+            title: 'Scan Finished',
+            message: 'All selected files already exist in your local library index.',
+            type: 'info',
+          });
+        }
+
+        return report;
+      } catch (err) {
+        console.error('GhostWave: file import error:', err);
+        addToast({
+          title: 'Import Failed',
+          message: err instanceof Error ? err.message : 'Failed to scan files.',
+          type: 'error',
+        });
+        return {
+          added: 0,
+          updated: 0,
+          skipped: 0,
+          unsupported: 0,
+          unreadable: files.length,
+          tracks: [],
+          errors: [{ fileName: 'all', reason: String(err) }],
+        };
+      } finally {
+        setIsScanning(false);
+        setScanProgress((prev) => ({ ...prev, isScanning: false, currentFile: '' }));
+      }
     },
     [addToast, selectedTrack]
   );
@@ -1119,25 +1189,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [importAudioFiles]);
 
   const rescanLibrary = useCallback(async (): Promise<ScanReport> => {
+    if (tracks.length === 0) {
+      setIsScanning(false);
+      setScanProgress({ scanned: 0, total: 0, currentFile: '', isScanning: false });
+      addToast({
+        title: 'Library Empty',
+        message: 'No indexed tracks to rescan. Import some audio files first.',
+        type: 'info',
+      });
+      return {
+        added: 0,
+        updated: 0,
+        skipped: 0,
+        unsupported: 0,
+        unreadable: 0,
+        tracks: [],
+        errors: [],
+      };
+    }
+
     setIsScanning(true);
-    const platform = getPlatform() as WebFilePlatform;
-    const scanner = new LibraryScanner(dbRepository, platform);
-
-    const report = await scanner.rescanLibrary(tracks, (progress) => {
-      setScanProgress(progress);
+    setScanProgress({
+      scanned: 0,
+      total: tracks.length,
+      currentFile: 'Verifying local index...',
+      isScanning: true,
     });
 
-    const updatedList = await dbRepository.getAllTracks();
-    setTracks(updatedList);
-    setIsScanning(false);
+    try {
+      const platform = getPlatform() as WebFilePlatform;
+      const scanner = new LibraryScanner(dbRepository, platform);
 
-    addToast({
-      title: 'Library Rescan Complete',
-      message: `Verified ${updatedList.length} local library entries.`,
-      type: 'info',
-    });
+      const report = await scanner.rescanLibrary(tracks, (progress) => {
+        setScanProgress(progress);
+      });
 
-    return report;
+      const updatedList = await dbRepository.getAllTracks();
+      setTracks(updatedList);
+
+      addToast({
+        title: 'Library Rescan Complete',
+        message: `Verified ${updatedList.length} local library entries.`,
+        type: 'info',
+      });
+
+      return report;
+    } catch (err) {
+      console.error('GhostWave: library rescan error:', err);
+      addToast({
+        title: 'Rescan Failed',
+        message: err instanceof Error ? err.message : 'Failed to rescan library.',
+        type: 'error',
+      });
+      return {
+        added: 0,
+        updated: 0,
+        skipped: 0,
+        unsupported: 0,
+        unreadable: tracks.length,
+        tracks: [],
+        errors: [{ fileName: 'all', reason: String(err) }],
+      };
+    } finally {
+      setIsScanning(false);
+      setScanProgress((prev) => ({ ...prev, isScanning: false, currentFile: '' }));
+    }
   }, [tracks, addToast]);
 
   const removeTrackFromLibrary = useCallback(
@@ -1186,6 +1302,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const triggerScan = useCallback(() => {
     rescanLibrary();
   }, [rescanLibrary]);
+
+  // S7.1 Local AI Provider integration
+  const testAiConnection = useCallback(
+    async (endpointOverride?: string): Promise<ConnectionStatus> => {
+      const ep = endpointOverride || settings.localAi.endpoint || DEFAULT_OLLAMA_ENDPOINT;
+      ollamaClient.setEndpoint(ep);
+      setAiConnection((prev) => ({ ...prev, state: 'checking', endpoint: ep }));
+      const status = await ollamaClient.checkConnection(4000);
+      setAiConnection(status);
+      setSettings((prev) => ({
+        ...prev,
+        localAi: {
+          ...prev.localAi,
+          endpoint: ep,
+          status: status.isAvailable ? 'connected' : 'disconnected',
+        },
+      }));
+      return status;
+    },
+    [settings.localAi.endpoint]
+  );
+
+  const discoverAiModels = useCallback(
+    async (endpointOverride?: string): Promise<ModelInfo[]> => {
+      const ep = endpointOverride || settings.localAi.endpoint || DEFAULT_OLLAMA_ENDPOINT;
+      ollamaClient.setEndpoint(ep);
+      const models = await ollamaClient.listModels(4000);
+      setAiInstalledModels(models);
+      return models;
+    },
+    [settings.localAi.endpoint]
+  );
+
+  const sendTestAiPrompt = useCallback(
+    async (promptText: string, modelOverride?: string): Promise<GenerateResult> => {
+      const targetModel = modelOverride || settings.localAi.model || DEFAULT_AI_MODEL;
+      return ollamaClient.generate(promptText, {
+        model: targetModel,
+        timeoutMs: 15000,
+      });
+    },
+    [settings.localAi.model]
+  );
 
   return (
     <AppContext.Provider
@@ -1259,6 +1418,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         removeToast,
         activeModal,
         setActiveModal,
+        aiConnection,
+        aiInstalledModels,
+        testAiConnection,
+        discoverAiModels,
+        sendTestAiPrompt,
+        ollamaClient,
       }}
     >
       {children}
