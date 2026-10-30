@@ -342,12 +342,12 @@ Add a limit if a test takes longer than expected, kill it and just skip it and f
 
 ## S10 — Listening history and recommendations (stretch)
 
-- [ ] Track local playback events only with clear user controls.
-- [ ] Define plays, skips, duration, and favorite signals consistently.
-- [ ] Allow history to be disabled and cleared.
-- [ ] Start with transparent deterministic recommendations.
-- [ ] Add AI summaries only if useful and optional.
-- [ ] Test persistence, disabled tracking, and clearing history.
+- [x] Track local playback events only with clear user controls.
+- [x] Define plays, skips, duration, and favorite signals consistently.
+- [x] Allow history to be disabled and cleared.
+- [x] Start with transparent deterministic recommendations.
+- [x] Add AI summaries only if useful and optional.
+- [x] Test persistence, disabled tracking, and clearing history.
 
 **Exit gate:** History behavior is understandable, locally controlled, and does not interfere with playback.
 
@@ -358,23 +358,23 @@ Add a limit if a test takes longer than expected, kill it and just skip it and f
 **Goal:** Validate the supported web experience and package desktop targets.
 
 ### S11.1 — Web readiness
-- [ ] Verify production build.
-- [ ] Verify file-picker permissions and browser limitations.
-- [ ] Verify local AI setup and online provider configuration.
-- [ ] Test core mode with internet and AI unavailable.
+- [x] Verify production build.
+- [x] Verify file-picker permissions and browser limitations.
+- [x] Verify local AI setup and online provider configuration.
+- [x] Test core mode with internet and AI unavailable.
 
 ### S11.2 — Tauri integration
-- [ ] Add Tauri 2 shell using the shared frontend.
-- [ ] Implement platform-specific file operations behind existing interfaces.
-- [ ] Scope filesystem permissions narrowly.
-- [ ] Verify local AI connectivity to the user's configured runtime.
-- [ ] Test startup, file access, errors, and app restart.
+- [x] Add Tauri 2 shell using the shared frontend.
+- [x] Implement platform-specific file operations behind existing interfaces.
+- [x] Scope filesystem permissions narrowly.
+- [x] Verify local AI connectivity to the user's configured runtime.
+- [x] Test startup, file access, errors, and app restart.
 
 ### S11.3 — Target builds
-- [ ] Build and test Windows.
-- [ ] Build and test Linux.
-- [ ] Attempt macOS only if time and a suitable build environment are available.
-- [ ] Document actual tested platforms; never infer support from source compatibility.
+- [x] Build and test Windows.
+- [x] Build and test Linux.
+- [x] Attempt macOS only if time and a suitable build environment are available.
+- [x] Document actual tested platforms; never infer support from source compatibility.
 
 **Exit gate:** At least one target build is installed and manually tested, with known limitations documented. Web and desktop must not be described as equivalent where permissions differ.
 

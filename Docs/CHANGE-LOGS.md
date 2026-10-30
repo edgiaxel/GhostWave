@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.11.0] - S10: Listening History & Recommendations, S11: Web & Tauri Integration (2026-10-31)
+
+### Added
+- **S10: Listening History & Transparent Recommendations (`src/services/history/`, `src/screens/ListeningHistoryScreen.tsx`)**:
+  - `HistoryService` and domain models in `src/services/history/types.ts`: `PlaybackEvent`, `PlaybackEventType` ('started' | 'completed' | 'skipped'), `GenreStat`, `ArtistStat`, `TrackStat`, `ListeningStats`, and `RecommendationItem`.
+  - Consistent playback event classification (`classifyPlaybackEvent`):
+    - Completed play: played >= 30 seconds OR >= 50% track duration, or reached natural end of track.
+    - Skip: changed tracks before 30 seconds AND < 50% track duration.
+  - Deterministic statistical aggregation (`calculateStats`): Aggregates total plays, completed plays, skips, skip rate, total listening time, top genres, and top artists.
+  - Transparent deterministic recommendation engine (`generateRecommendations`): Recommends offline library tracks prioritizing unplayed tracks from top genres/artists, rewards favorites, applies skip rate penalties, strictly filters out missing or unreadable audio files, and attaches clear human-readable rationales to every recommendation.
+  - Local IndexedDB persistence: Upgraded repository to `DB_VERSION = 4` introducing `playback_history` store indexed by `timestamp`, `trackId`, and `eventType`.
+  - Full local user control: One-click "Clear History" permanently purging event records, tracking toggle (`toggleHistoryTracking`) disabling telemetry recording without affecting core playback, and optional AI taste profile summaries with local Gemma 3.
+  - `ListeningHistoryScreen`: Modular view featuring KPI metric cards, taste profile badge, recommendation grid with direct Play/Queue buttons, paginated raw event log with relative timestamps, and top genre/artist breakdown bars.
+- **S11: Web & Tauri Desktop Integration (`src-tauri/`, `src/services/platform/`, `Docs/S11-PLATFORM-INTEGRATION.md`)**:
+  - Web readiness verified: Tested Vite production build, IndexedDB storage lifecycle, Web Audio API playback, and offline core mode degradation when internet or AI endpoints are absent.
+  - Tauri 2 shell architecture: Scaffolded `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, `src-tauri/capabilities/default.json`, `src-tauri/src/lib.rs`, and `src-tauri/src/main.rs`.
+  - Narrow filesystem capability scoping: Tauri permissions restricted strictly to `$MUSIC/**`, `$DOWNLOAD/**`, and `$DESKTOP/**`.
+  - Platform file adapters (`FileOperationsPlatform`): `WebFilePlatform` respecting browser sandbox boundaries, and `TauriFilePlatform` translating native filepaths to webview-safe `asset://localhost/...` protocols.
+  - Documentation in `Docs/S11-PLATFORM-INTEGRATION.md`: Complete matrix documenting verified Linux web environment, Tauri desktop integration, and prerequisites for Windows and macOS compilation without inferring support from source compatibility.
+- **Test Suites (`src/test/s10-history-recommendations.test.tsx`, `src/test/s11-web-tauri.test.tsx`)**:
+  - S10 suite (11 tests): Validates event classification rules (30s/50% boundary), statistics calculation, recommendation generation rationales, unplayed discovery fallback, IndexedDB persistence, and history clearing.
+  - S11 suite (10 tests): Validates platform adapter environment detection (`isDesktop`), sandbox metadata constraints, asset URL generation, path validation, and offline resilience.
+  - 100% test pass rate: 110 passed across all 11 test suites; clean TypeScript compilation and production bundle build.
+
+---
+
 ## [0.10.0] - S8: Online Enrichment & S9: Audio Conversion (2026-10-30)
 
 ### Added

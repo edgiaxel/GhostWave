@@ -146,6 +146,10 @@ export interface AppSettings {
     autoScanOnStartup: boolean;
     renamePattern: string;
   };
+  history?: {
+    enabled: boolean;
+    maxEvents?: number;
+  };
 }
 
 export interface LayoutSizes {

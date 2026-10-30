@@ -1,11 +1,13 @@
 import { Track, AppSettings, Playlist } from '../../types';
+import { PlaybackEvent } from '../history/types';
 
 const DB_NAME = 'ghostwave_library';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const TRACKS_STORE = 'tracks';
 const BLOBS_STORE = 'blobs';
 const SETTINGS_STORE = 'settings';
 const PLAYLISTS_STORE = 'playlists';
+const HISTORY_STORE = 'playback_history';
 
 export class IndexedDbRepository {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -45,6 +47,13 @@ export class IndexedDbRepository {
           const playlistStore = db.createObjectStore(PLAYLISTS_STORE, { keyPath: 'id' });
           playlistStore.createIndex('name', 'name', { unique: false });
           playlistStore.createIndex('updatedAt', 'updatedAt', { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+          const historyStore = db.createObjectStore(HISTORY_STORE, { keyPath: 'id' });
+          historyStore.createIndex('timestamp', 'timestamp', { unique: false });
+          historyStore.createIndex('trackId', 'trackId', { unique: false });
+          historyStore.createIndex('eventType', 'eventType', { unique: false });
         }
       };
 
@@ -286,6 +295,69 @@ export class IndexedDbRepository {
     } catch {
       return null;
     }
+  }
+
+  async savePlaybackEvent(event: PlaybackEvent): Promise<void> {
+    const db = await this.openDatabase();
+    if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+      return;
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(HISTORY_STORE, 'readwrite');
+      const store = tx.objectStore(HISTORY_STORE);
+      store.put(event);
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async getPlaybackEvents(limit = 1000): Promise<PlaybackEvent[]> {
+    try {
+      const db = await this.openDatabase();
+      if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+        return [];
+      }
+
+      return new Promise<PlaybackEvent[]>((resolve, reject) => {
+        const tx = db.transaction(HISTORY_STORE, 'readonly');
+        const store = tx.objectStore(HISTORY_STORE);
+        const index = store.index('timestamp');
+        // Open cursor descending (prev) to get newest first
+        const req = index.openCursor(null, 'prev');
+        const results: PlaybackEvent[] = [];
+
+        req.onsuccess = () => {
+          const cursor = req.result;
+          if (cursor && results.length < limit) {
+            results.push(cursor.value as PlaybackEvent);
+            cursor.continue();
+          } else {
+            resolve(results);
+          }
+        };
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async clearPlaybackEvents(): Promise<void> {
+    const db = await this.openDatabase();
+    if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+      return;
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(HISTORY_STORE, 'readwrite');
+      const store = tx.objectStore(HISTORY_STORE);
+      const req = store.clear();
+
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
   }
 }
 

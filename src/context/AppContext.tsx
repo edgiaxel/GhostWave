@@ -48,6 +48,12 @@ import {
   ConversionProgress,
   ConversionBatchReport,
 } from '../services/conversion/types';
+import {
+  PlaybackEvent,
+  ListeningStats,
+  RecommendationItem,
+} from '../services/history/types';
+import { HistoryService } from '../services/history/HistoryService';
 
 export interface ToastMessage {
   id: string;
@@ -148,6 +154,13 @@ interface AppContextType {
     options: ConversionOptions,
     onProgress?: (p: ConversionProgress) => void
   ) => Promise<ConversionBatchReport>;
+  playbackHistory: PlaybackEvent[];
+  listeningStats: ListeningStats;
+  recommendations: RecommendationItem[];
+  clearPlaybackHistory: () => Promise<void>;
+  toggleHistoryTracking: (enabled: boolean) => void;
+  refreshRecommendations: () => void;
+  generateAiHistorySummary: () => Promise<string>;
 }
 
 const INITIAL_SETTINGS: AppSettings = {
@@ -163,6 +176,10 @@ const INITIAL_SETTINGS: AppSettings = {
     enabled: false,
     provider: 'musicbrainz',
     lookupAlbumArt: true,
+  },
+  history: {
+    enabled: true,
+    maxEvents: 1000,
   },
   visualizer: {
     preset: 'ghost_pulse',
@@ -328,8 +345,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return Math.min(100, Math.round((scanProgress.scanned / scanProgress.total) * 100));
   }, [scanProgress]);
 
+  // S10: Listening History & Recommendations state
+  const [playbackHistory, setPlaybackHistory] = useState<PlaybackEvent[]>([]);
+  const playSessionRef = useRef<{ trackId: string; startTime: number; trackDuration: number } | null>(null);
+
+  const listeningStats = useMemo(() => {
+    return HistoryService.calculateStats(tracks, playbackHistory);
+  }, [tracks, playbackHistory]);
+
+  const recommendations = useMemo(() => {
+    return HistoryService.generateRecommendations(tracks, playbackHistory, 8);
+  }, [tracks, playbackHistory]);
+
+  const recordPlaybackEvent = useCallback(
+    async (
+      trackId: string,
+      durationPlayedSeconds: number,
+      trackDurationSeconds: number,
+      isNaturalEnd: boolean,
+      source: 'library' | 'playlist' | 'queue' | 'recommendation' = 'library'
+    ) => {
+      if (settings.history?.enabled === false) return;
+      if (durationPlayedSeconds <= 0) return;
+
+      const eventType = HistoryService.classifyPlaybackEvent(
+        durationPlayedSeconds,
+        trackDurationSeconds,
+        isNaturalEnd
+      );
+      const ratio =
+        trackDurationSeconds > 0
+          ? Math.min(1, durationPlayedSeconds / trackDurationSeconds)
+          : 0;
+
+      const event: PlaybackEvent = {
+        id: `evt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        trackId,
+        timestamp: Date.now(),
+        eventType,
+        durationPlayedSeconds,
+        trackDurationSeconds,
+        completedRatio: Math.round(ratio * 100) / 100,
+        source,
+      };
+
+      try {
+        await dbRepository.savePlaybackEvent(event);
+        setPlaybackHistory((prev) => [event, ...prev.slice(0, 999)]);
+      } catch {
+        // Fallback gracefully
+      }
+    },
+    [settings.history?.enabled]
+  );
+
   // Advance queue on track end
   const handleTrackEnded = useCallback(() => {
+    if (playSessionRef.current) {
+      const elapsed = Math.round((Date.now() - playSessionRef.current.startTime) / 1000);
+      recordPlaybackEvent(
+        playSessionRef.current.trackId,
+        elapsed,
+        playSessionRef.current.trackDuration,
+        true
+      );
+      playSessionRef.current = null;
+    }
+
     const { repeatMode, shuffle, currentTrackId } = stateRef.current;
     const currentQueue = queueRef.current;
     const currentTracks = tracksRef.current;
@@ -434,6 +516,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setPlaylists(storedPlaylists);
           setSelectedPlaylistId(storedPlaylists[0].id);
         }
+        const storedEvents = await dbRepository.getPlaybackEvents(1000);
+        if (isMounted && storedEvents.length > 0) {
+          setPlaybackHistory(storedEvents);
+        }
       } catch {
         // Fallback to empty library if IndexedDB fails
       }
@@ -485,6 +571,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentList = tracksRef.current;
       const trk = currentList.find((t) => t.id === trackId);
       if (!trk) return;
+
+      // Scrobble / record previous track session if one was active
+      if (playSessionRef.current) {
+        const elapsed = Math.round((Date.now() - playSessionRef.current.startTime) / 1000);
+        recordPlaybackEvent(
+          playSessionRef.current.trackId,
+          elapsed,
+          playSessionRef.current.trackDuration,
+          false
+        );
+      }
+      playSessionRef.current = {
+        trackId: trk.id,
+        startTime: Date.now(),
+        trackDuration: trk.durationSeconds,
+      };
 
       setSelectedTrack(trk);
       setPlaybackState((prev) => ({
@@ -1513,6 +1615,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     []
   );
 
+  const clearPlaybackHistory = useCallback(async () => {
+    await dbRepository.clearPlaybackEvents();
+    setPlaybackHistory([]);
+    addToast({
+      title: 'History Cleared',
+      message: 'Local playback history and statistics have been reset.',
+      type: 'info',
+    });
+  }, [addToast]);
+
+  const toggleHistoryTracking = useCallback(
+    (enabled: boolean) => {
+      updateSettings({
+        history: {
+          ...settings.history,
+          enabled,
+        },
+      });
+      addToast({
+        title: enabled ? 'Tracking Enabled' : 'Tracking Paused',
+        message: enabled
+          ? 'Listening history is now recorded locally in IndexedDB.'
+          : 'Listening history recording paused. No playback events will be logged.',
+        type: 'info',
+      });
+    },
+    [settings.history, updateSettings, addToast]
+  );
+
+  const refreshRecommendations = useCallback(() => {
+    setPlaybackHistory((prev) => [...prev]);
+  }, []);
+
+  const generateAiHistorySummary = useCallback(async (): Promise<string> => {
+    if (aiConnection.state === 'connected' && ollamaClient) {
+      try {
+        const topGenre = listeningStats.topGenres[0]?.genre || 'Eclectic';
+        const topArtist = listeningStats.topArtists[0]?.artist || 'Various Artists';
+        const prompt = `Based on a local music listener who has played ${listeningStats.totalPlays} tracks (${Math.round(listeningStats.totalListenTimeSeconds / 60)} minutes total), with top genre "${topGenre}" and favorite artist "${topArtist}", write a concise 2-sentence witty audio personality profile. Return only the description without markdown headers or code fences.`;
+        const res = await ollamaClient.generate(prompt, { model: settings.localAi.model });
+        if (res.response && res.response.trim()) {
+          return res.response.trim();
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return HistoryService.generateTasteProfileSummary(listeningStats);
+  }, [aiConnection.state, listeningStats, settings.localAi.model]);
+
   return (
     <AppContext.Provider
       value={{
@@ -1603,6 +1755,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchCoverArt,
         fetchLyrics,
         convertTracks,
+        playbackHistory,
+        listeningStats,
+        recommendations,
+        clearPlaybackHistory,
+        toggleHistoryTracking,
+        refreshRecommendations,
+        generateAiHistorySummary,
       }}
     >
       {children}
