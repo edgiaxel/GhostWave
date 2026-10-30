@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.10.0] - S8: Online Enrichment & S9: Audio Conversion (2026-10-30)
+
+### Added
+- **S8: Online Enrichment Architecture (`src/services/enrichment/`)**:
+  - `OnlineEnrichmentProvider` interface and candidate data structures (`EnrichmentSearchQuery`, `EnrichmentCandidate`, `CoverArtResult`, `LyricsResult`) in `src/services/enrichment/types.ts`.
+  - `MusicBrainzProvider`: Rate-limited queries adhering strictly to MusicBrainz API rules (enforcing >= 1000ms delay queue), descriptive User-Agent header `GhostWave/0.9.0 ( https://github.com/edgiaxel/GhostWave )`, Lucene query escaping, and deterministic similarity-based confidence scoring.
+  - `CoverArtProvider`: Integration with the Cover Art Archive (Internet Archive/MusicBrainz joint non-profit project) retrieving release front cover art and thumbnails with graceful 404 handling.
+  - `LrclibProvider`: Open LRCLIB lyrics integration distinguishing plain lyrics from synchronized LRC lyrics with explicit timestamp indicators (`[mm:ss.xx]`) and copyright disclaimers.
+  - `SerpApiProvider`: Optional search partner integration with secure client credential handling (API keys stored exclusively in local client settings, masked in UI, never bundled in frontend source).
+  - `OnlineEnrichmentService`: Orchestrator handling online search fallback, timeout protection, offline resilience, and converting candidates into reviewable `MetadataProposal` items.
+  - `OnlineEnrichmentModal.tsx`: Interactive modal for querying candidates, comparing tag diffs, previewing album artwork before saving, displaying plain/synced lyrics, and applying approved metadata.
+  - Integrated online lookup triggers across the app: Table row actions, grid album card hover actions in `LibraryScreen.tsx`, and issue cards in `HealthCleanupScreen.tsx`.
+- **S9: Audio Conversion Engine (`src/services/conversion/`)**:
+  - `WavEncoder`: Pure TypeScript 16-bit signed PCM RIFF/WAVE encoder generating compliant 44-byte headers (RIFF, WAVE, fmt , data chunks) and quantizing Float32 audio samples into signed 16-bit integers.
+  - True re-encoding verification: Verified actual PCM sample re-quantization and binary RIFF structure validation (`validateWavBlob`), strictly rejecting extension renaming or container spoofing.
+  - `AudioConversionService`: Web Audio API `AudioContext.decodeAudioData` decoder, channel extraction, safe filename construction (`{name}_converted.wav`), collision detection against existing library files (`detectCollision` with indexed safe filenames), batch processing with live progress callbacks, and cancellation (`AbortSignal`).
+  - `AudioConversionModal.tsx`: Conversion modal supporting format selection (WAV 16-bit PCM Lossless / OGG), sample rate selection (44.1kHz / 48kHz), channels (stereo / mono), naming suffix customization, live progress indicators, per-file result cards, direct download, and one-click import into library index.
+  - Licensing & engine analysis in `Docs/S9-CONVERSION-ENGINE-ANALYSIS.md`: Complete comparative analysis between in-browser Web Audio API and desktop FFmpeg bridge, documenting LGPL v2.1/v3 licensing requirements, distribution implications, format support matrices, and non-destructive invariants.
+- **S8 & S9 Settings Cards (`src/screens/SettingsScreen.tsx`)**:
+  - Online Enrichment settings card: Enable toggle, primary provider selector (MusicBrainz / SerpApi), masked SerpApi API key input, artwork & lyrics fetch toggles, rate limits and privacy documentation.
+  - Audio Conversion settings card: Default target format, sample rate, channels configuration, and engine architecture & licensing notice.
+- **Test Suites & Bounded Limits (`src/test/s8-online-enrichment.test.tsx`, `src/test/s9-audio-conversion.test.tsx`)**:
+  - S8 suite (10 tests): Validates provider initialization, rate limit queuing, confidence rationale, 429/timeout/offline handling, Cover Art Archive lookup, LRCLIB plain vs synced lyrics distinction, and proposal construction.
+  - S9 suite (6 tests): Validates supported format contracts, non-destructive filename generation, collision detection with alternate indexing, genuine 44-byte RIFF header generation and Float32-to-Int16 quantization, rejection of invalid non-RIFF blobs, and converted library entity creation preserving source files untouched.
+  - Full test suite passes: 89 tests passing across all 9 test suites in ~5s with 5000ms Vitest bounded test execution guards.
+
+---
+
 ## [0.9.0] - S7.2, S7.3, S7.4: Natural-Language Playlists, Metadata Proposals, and AI Integration Testing (2026-10-30)
 
 ### Added

@@ -120,8 +120,16 @@ export interface AppSettings {
   };
   onlineEnrichment: {
     enabled: boolean;
-    provider: 'musicbrainz' | 'none';
+    provider: 'musicbrainz' | 'serpapi' | 'none';
     lookupAlbumArt: boolean;
+    lookupCoverArt?: boolean;
+    lookupLyrics?: boolean;
+    serpApiKey?: string;
+  };
+  audioConversion?: {
+    defaultFormat: 'wav' | 'ogg';
+    sampleRate: 44100 | 48000;
+    channels: 1 | 2;
   };
   visualizer: {
     preset: 'spectral_bars' | 'ghost_pulse' | 'waveform_rings' | 'pumpkin_pulse';

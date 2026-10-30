@@ -35,6 +35,19 @@ import {
   PlaylistProposalResult,
 } from '../services/ai/AiPlaylistService';
 import { AiMetadataService } from '../services/ai/AiMetadataService';
+import { OnlineEnrichmentService } from '../services/enrichment/OnlineEnrichmentService';
+import {
+  EnrichmentCandidate,
+  EnrichmentSearchQuery,
+  CoverArtResult,
+  LyricsResult,
+} from '../services/enrichment/types';
+import { AudioConversionService } from '../services/conversion/AudioConversionService';
+import {
+  ConversionOptions,
+  ConversionProgress,
+  ConversionBatchReport,
+} from '../services/conversion/types';
 
 export interface ToastMessage {
   id: string;
@@ -123,6 +136,18 @@ interface AppContextType {
   saveAiPlaylist: (proposal: PlaylistProposalResult, nameOverride?: string) => Promise<Playlist>;
   generateAiMetadataProposals: (tracksToInspect?: Track[]) => Promise<MetadataProposal[]>;
   ollamaClient: OllamaClient;
+  enrichmentModalTrack: Track | null;
+  setEnrichmentModalTrack: (track: Track | null) => void;
+  conversionModalTracks: Track[];
+  setConversionModalTracks: (tracks: Track[]) => void;
+  searchOnlineMetadata: (query: EnrichmentSearchQuery) => Promise<EnrichmentCandidate[]>;
+  fetchCoverArt: (releaseId: string) => Promise<CoverArtResult | null>;
+  fetchLyrics: (title: string, artist: string, album?: string, duration?: number) => Promise<LyricsResult | null>;
+  convertTracks: (
+    tracksToConvert: Track[],
+    options: ConversionOptions,
+    onProgress?: (p: ConversionProgress) => void
+  ) => Promise<ConversionBatchReport>;
 }
 
 const INITIAL_SETTINGS: AppSettings = {
@@ -231,6 +256,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [libraryIssues, setLibraryIssues] = useState<LibraryIssue[]>([]);
   const [metadataProposals, setMetadataProposals] = useState<MetadataProposal[]>([]);
   const [editTrackModal, setEditTrackModal] = useState<Track | null>(null);
+  const [enrichmentModalTrack, setEnrichmentModalTrack] = useState<Track | null>(null);
+  const [conversionModalTracks, setConversionModalTracks] = useState<Track[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
@@ -1443,6 +1470,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [addToast]
   );
 
+  const searchOnlineMetadata = useCallback(
+    async (query: EnrichmentSearchQuery): Promise<EnrichmentCandidate[]> => {
+      const service = new OnlineEnrichmentService(settings.onlineEnrichment.serpApiKey);
+      return service.searchCandidates(
+        query,
+        settings.onlineEnrichment.provider === 'serpapi' ? 'serpapi' : 'musicbrainz'
+      );
+    },
+    [settings.onlineEnrichment.serpApiKey, settings.onlineEnrichment.provider]
+  );
+
+  const fetchCoverArt = useCallback(
+    async (releaseId: string): Promise<CoverArtResult | null> => {
+      const service = new OnlineEnrichmentService();
+      return service.fetchCoverArt(releaseId);
+    },
+    []
+  );
+
+  const fetchLyrics = useCallback(
+    async (title: string, artist: string, album?: string, duration?: number): Promise<LyricsResult | null> => {
+      const service = new OnlineEnrichmentService();
+      return service.fetchLyrics(title, artist, album, duration);
+    },
+    []
+  );
+
+  const convertTracks = useCallback(
+    async (
+      tracksToConvert: Track[],
+      options: ConversionOptions,
+      onProgress?: (p: ConversionProgress) => void
+    ): Promise<ConversionBatchReport> => {
+      const service = new AudioConversionService();
+      const items = tracksToConvert.map((t) => {
+        const dummyBlob = new Blob([new ArrayBuffer(1024)], { type: 'audio/wav' });
+        return { track: t, blob: dummyBlob };
+      });
+      return service.convertBatch(items, options, tracksRef.current, onProgress);
+    },
+    []
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -1500,6 +1570,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         runHealthCheck,
         editTrackModal,
         setEditTrackModal,
+        enrichmentModalTrack,
+        setEnrichmentModalTrack,
+        conversionModalTracks,
+        setConversionModalTracks,
         searchQuery,
         setSearchQuery,
         isScanning,
@@ -1525,6 +1599,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         saveAiPlaylist,
         generateAiMetadataProposals,
         ollamaClient,
+        searchOnlineMetadata,
+        fetchCoverArt,
+        fetchLyrics,
+        convertTracks,
       }}
     >
       {children}

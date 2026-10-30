@@ -15,6 +15,8 @@ export const LibraryScreen: React.FC = () => {
     addToQueue,
     setPlaylistModalTrack,
     setEditTrackModal,
+    setEnrichmentModalTrack,
+    setConversionModalTracks,
     searchQuery,
     setSearchQuery,
     isScanning,
@@ -174,17 +176,27 @@ export const LibraryScreen: React.FC = () => {
               <span>Scan Folder</span>
             </button>
             {tracks.length > 0 && (
-              <button
-                onClick={() => rescanLibrary()}
-                disabled={isScanning}
-                className="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-bright text-outline hover:text-on-surface transition-colors border border-outline-variant/30 flex items-center justify-center disabled:opacity-40"
-                title="Rescan library files"
-                aria-label="Rescan library files"
-              >
-                <span className={`material-symbols-outlined text-base ${isScanning ? 'animate-spin' : ''}`}>
-                  sync
-                </span>
-              </button>
+              <>
+                <button
+                  onClick={() => setConversionModalTracks(tracks)}
+                  className="px-4 py-2.5 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-medium transition-colors border border-outline-variant/30 flex items-center gap-1.5"
+                  title="Convert audio files non-destructively"
+                >
+                  <span className="material-symbols-outlined text-sm text-secondary">transform</span>
+                  <span>Convert Audio</span>
+                </button>
+                <button
+                  onClick={() => rescanLibrary()}
+                  disabled={isScanning}
+                  className="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-bright text-outline hover:text-on-surface transition-colors border border-outline-variant/30 flex items-center justify-center disabled:opacity-40"
+                  title="Rescan library files"
+                  aria-label="Rescan library files"
+                >
+                  <span className={`material-symbols-outlined text-base ${isScanning ? 'animate-spin' : ''}`}>
+                    sync
+                  </span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -581,6 +593,28 @@ export const LibraryScreen: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            setEnrichmentModalTrack(track);
+                          }}
+                          className="w-7 h-7 rounded-full hover:bg-surface-container text-outline hover:text-secondary flex items-center justify-center transition-colors"
+                          aria-label={`Search online metadata for ${track.title}`}
+                          title="Online Lookup (MusicBrainz, LRCLIB)"
+                        >
+                          <span className="material-symbols-outlined text-sm">travel_explore</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConversionModalTracks([track]);
+                          }}
+                          className="w-7 h-7 rounded-full hover:bg-surface-container text-outline hover:text-tertiary flex items-center justify-center transition-colors"
+                          aria-label={`Convert ${track.title}`}
+                          title="Convert Audio"
+                        >
+                          <span className="material-symbols-outlined text-sm">transform</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setEditTrackModal(track);
                           }}
                           className="w-7 h-7 rounded-full hover:bg-surface-container text-outline hover:text-primary flex items-center justify-center transition-colors"
@@ -640,6 +674,28 @@ export const LibraryScreen: React.FC = () => {
                     </span>
                   )}
                   <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEnrichmentModalTrack(track);
+                      }}
+                      className="w-8 h-8 rounded-full bg-surface-container-high text-on-surface hover:text-secondary flex items-center justify-center shadow-lg"
+                      title="Online Lookup (MusicBrainz, LRCLIB)"
+                      aria-label={`Search online metadata for ${track.title}`}
+                    >
+                      <span className="material-symbols-outlined text-base">travel_explore</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConversionModalTracks([track]);
+                      }}
+                      className="w-8 h-8 rounded-full bg-surface-container-high text-on-surface hover:text-tertiary flex items-center justify-center shadow-lg"
+                      title="Convert Audio"
+                      aria-label={`Convert audio for ${track.title}`}
+                    >
+                      <span className="material-symbols-outlined text-base">transform</span>
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

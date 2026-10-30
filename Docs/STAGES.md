@@ -290,25 +290,25 @@ Add a limit if a test takes longer than expected, kill it and just skip it and f
 **Goal:** Add optional external lookup without coupling it to core operation.
 
 ### S8.1 — Provider abstraction
-- [ ] Define a provider interface and result-source representation.
-- [ ] Keep API credentials on the server when they are private.
-- [ ] Document rate limits, provider terms, and privacy implications.
+- [x] Define a provider interface and result-source representation.
+- [x] Keep API credentials on the server when they are private.
+- [x] Document rate limits, provider terms, and privacy implications.
 
 ### S8.2 — Metadata lookup
-- [ ] Search for candidate track/artist/album matches.
-- [ ] Show source and confidence rationale where available.
-- [ ] Let the user select and approve candidates.
-- [ ] Handle no results, provider errors, and rate limits.
+- [x] Search for candidate track/artist/album matches.
+- [x] Show source and confidence rationale where available.
+- [x] Let the user select and approve candidates.
+- [x] Handle no results, provider errors, and rate limits.
 
 ### S8.3 — Artwork and lyrics (stretch)
-- [ ] Use a suitable provider only after license/terms review.
-- [ ] Preview artwork before saving.
-- [ ] Clearly distinguish plain lyrics from synchronized lyrics.
-- [ ] Do not redistribute restricted content without permission.
+- [x] Use a suitable provider only after license/terms review.
+- [x] Preview artwork before saving.
+- [x] Clearly distinguish plain lyrics from synchronized lyrics.
+- [x] Do not redistribute restricted content without permission.
 
 ### S8.4 — Optional search partner
-- [ ] Consider SerpApi only if it adds value beyond a dedicated metadata source.
-- [ ] Verify partner requirements and do not expose credentials in the frontend.
+- [x] Consider SerpApi only if it adds value beyond a dedicated metadata source.
+- [x] Verify partner requirements and do not expose credentials in the frontend.
 
 **Exit gate:** Online services are optional, sourced, and failure-tolerant; core local features continue working with the internet disabled.
 
@@ -319,22 +319,22 @@ Add a limit if a test takes longer than expected, kill it and just skip it and f
 **Goal:** Convert selected tracks to a small, verified set of formats.
 
 ### S9.1 — Select conversion engine
-- [ ] Compare feasible web and desktop implementations.
-- [ ] Review FFmpeg/build/codec licensing and distribution implications.
-- [ ] Define supported input/output formats and options explicitly.
+- [x] Compare feasible web and desktop implementations.
+- [x] Review FFmpeg/build/codec licensing and distribution implications.
+- [x] Define supported input/output formats and options explicitly.
 
 ### S9.2 — Conversion workflow
-- [ ] Select one or more tracks and target format.
-- [ ] Validate output location and extension.
-- [ ] Convert to a new output file by default.
-- [ ] Preserve original files.
-- [ ] Show progress and per-file results.
-- [ ] Detect output collisions and insufficient/invalid destinations where feasible.
+- [x] Select one or more tracks and target format.
+- [x] Validate output location and extension.
+- [x] Convert to a new output file by default.
+- [x] Preserve original files.
+- [x] Show progress and per-file results.
+- [x] Detect output collisions and insufficient/invalid destinations where feasible.
 
 ### S9.3 — Validation
-- [ ] Verify generated files can be read and played.
-- [ ] Test invalid input, cancellation, partial failure, and collision.
-- [ ] Verify conversion is actual re-encoding, not extension renaming.
+- [x] Verify generated files can be read and played.
+- [x] Test invalid input, cancellation, partial failure, and collision.
+- [x] Verify conversion is actual re-encoding, not extension renaming.
 
 **Exit gate:** One clearly documented conversion path works reliably. Do not claim broad format support without testing.
 

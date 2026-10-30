@@ -15,6 +15,7 @@ export const HealthCleanupScreen: React.FC = () => {
     applyRenameTemplate,
     removeTrackFromLibrary,
     setEditTrackModal,
+    setEnrichmentModalTrack,
     runHealthCheck,
     settings,
     aiConnection,
@@ -301,12 +302,22 @@ export const HealthCleanupScreen: React.FC = () => {
                             Remove Duplicate
                           </button>
                         ) : trk ? (
-                          <button
-                            onClick={() => setEditTrackModal(trk)}
-                            className="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-xs font-semibold border border-primary/20 transition-colors"
-                          >
-                            Edit Tags
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => setEnrichmentModalTrack(trk)}
+                              className="px-2 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-medium border border-outline-variant/30 transition-colors flex items-center gap-1"
+                              title="Online Lookup (MusicBrainz, LRCLIB)"
+                            >
+                              <span className="material-symbols-outlined text-xs text-secondary">travel_explore</span>
+                              <span>Enrich</span>
+                            </button>
+                            <button
+                              onClick={() => setEditTrackModal(trk)}
+                              className="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary text-xs font-semibold border border-primary/20 transition-colors"
+                            >
+                              Edit Tags
+                            </button>
+                          </div>
                         ) : null}
                       </div>
                     </div>

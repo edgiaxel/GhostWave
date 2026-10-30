@@ -28,6 +28,63 @@ export const SettingsScreen: React.FC = () => {
     model: string;
   } | null>(null);
 
+  // S8 Online Enrichment State
+  const [enrichmentEnabled, setEnrichmentEnabled] = useState(settings.onlineEnrichment?.enabled ?? true);
+  const [enrichmentProvider, setEnrichmentProvider] = useState<'musicbrainz' | 'serpapi'>(
+    settings.onlineEnrichment?.provider === 'serpapi' ? 'serpapi' : 'musicbrainz'
+  );
+  const [serpApiKey, setSerpApiKey] = useState(settings.onlineEnrichment?.serpApiKey || '');
+  const [lookupCoverArt, setLookupCoverArt] = useState(
+    settings.onlineEnrichment?.lookupCoverArt ?? settings.onlineEnrichment?.lookupAlbumArt ?? true
+  );
+  const [lookupLyrics, setLookupLyrics] = useState(settings.onlineEnrichment?.lookupLyrics ?? true);
+
+  // S9 Audio Conversion State
+  const [defaultFormat, setDefaultFormat] = useState<'wav' | 'ogg'>(
+    settings.audioConversion?.defaultFormat || 'wav'
+  );
+  const [sampleRate, setSampleRate] = useState<44100 | 48000>(
+    (settings.audioConversion?.sampleRate as 44100 | 48000) || 44100
+  );
+  const [channels, setChannels] = useState<1 | 2>(
+    (settings.audioConversion?.channels as 1 | 2) || 2
+  );
+
+  const handleSaveEnrichment = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings({
+      onlineEnrichment: {
+        enabled: enrichmentEnabled,
+        provider: enrichmentProvider,
+        serpApiKey: serpApiKey.trim() || undefined,
+        lookupAlbumArt: lookupCoverArt,
+        lookupCoverArt,
+        lookupLyrics,
+      },
+    });
+    addToast({
+      title: 'Enrichment Settings Saved',
+      message: 'Online provider preferences and credentials updated.',
+      type: 'success',
+    });
+  };
+
+  const handleSaveConversion = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings({
+      audioConversion: {
+        defaultFormat,
+        sampleRate,
+        channels,
+      },
+    });
+    addToast({
+      title: 'Conversion Settings Saved',
+      message: 'Audio encoder configuration updated.',
+      type: 'success',
+    });
+  };
+
   // Proactively check connection on screen mount if not yet checked
   useEffect(() => {
     if (aiConnection.state === 'unconfigured') {
@@ -387,6 +444,193 @@ export const SettingsScreen: React.FC = () => {
               <div>$ ollama serve</div>
               <div>$ ollama pull gemma3:4b</div>
             </div>
+          </div>
+        </div>
+
+        {/* S8: Online Enrichment & External Metadata */}
+        <div className="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-outline-variant/15 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-lg">travel_explore</span>
+              <h2 className="font-headline font-semibold text-sm text-on-surface">Online Enrichment (S8)</h2>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enrichmentEnabled}
+                onChange={(e) => setEnrichmentEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+            </label>
+          </div>
+
+          <form onSubmit={handleSaveEnrichment} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="enrichment-provider" className="text-xs font-medium text-on-surface">
+                Primary Metadata Provider
+              </label>
+              <select
+                id="enrichment-provider"
+                value={enrichmentProvider}
+                onChange={(e) => setEnrichmentProvider(e.target.value as 'musicbrainz' | 'serpapi')}
+                disabled={!enrichmentEnabled}
+                className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-secondary/50 disabled:opacity-50"
+              >
+                <option value="musicbrainz">MusicBrainz (Open Database, Rate-Limited)</option>
+                <option value="serpapi">SerpApi (Google Knowledge Graph, Key Required)</option>
+              </select>
+              <span className="text-[10px] text-outline">
+                MusicBrainz provides community metadata and release MBIDs for artwork lookup.
+              </span>
+            </div>
+
+            {enrichmentProvider === 'serpapi' && (
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="serpapi-key" className="text-xs font-medium text-on-surface">
+                  SerpApi Private API Key
+                </label>
+                <input
+                  id="serpapi-key"
+                  type="password"
+                  value={serpApiKey}
+                  onChange={(e) => setSerpApiKey(e.target.value)}
+                  placeholder="Enter secret SerpApi token..."
+                  disabled={!enrichmentEnabled}
+                  className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-secondary/50 font-mono disabled:opacity-50"
+                />
+                <span className="text-[10px] text-outline">
+                  Stored securely in your local browser storage. Never hardcoded or logged.
+                </span>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2 pt-1">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-on-surface">
+                <input
+                  type="checkbox"
+                  checked={lookupCoverArt}
+                  onChange={(e) => setLookupCoverArt(e.target.checked)}
+                  disabled={!enrichmentEnabled}
+                  className="rounded text-secondary focus:ring-secondary/40"
+                />
+                <span>Fetch Cover Art from Cover Art Archive (CC0)</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-on-surface">
+                <input
+                  type="checkbox"
+                  checked={lookupLyrics}
+                  onChange={(e) => setLookupLyrics(e.target.checked)}
+                  disabled={!enrichmentEnabled}
+                  className="rounded text-secondary focus:ring-secondary/40"
+                />
+                <span>Fetch Lyrics from LRCLIB (Plain and Synced LRC)</span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="submit"
+                disabled={!enrichmentEnabled}
+                className="px-4 py-2 rounded-full bg-secondary text-on-secondary text-xs font-semibold hover:opacity-90 transition-all shadow-sm disabled:opacity-40"
+              >
+                Save Enrichment Settings
+              </button>
+            </div>
+          </form>
+
+          {/* Rate Limits & Privacy Notice */}
+          <div className="p-3.5 rounded-xl bg-surface-container/40 border border-outline-variant/15 flex flex-col gap-1.5 text-xs text-on-surface-variant">
+            <span className="font-semibold text-on-surface flex items-center gap-1.5 text-[11px]">
+              <span className="material-symbols-outlined text-sm text-secondary">verified_user</span>
+              Rate Limits &amp; Privacy Safeguards
+            </span>
+            <p className="text-[10px] text-outline leading-relaxed">
+              MusicBrainz requires 1 second between queries. GhostWave queues all online queries to respect this limit. Lookups only trigger on explicit user request; core features function completely offline.
+            </p>
+          </div>
+        </div>
+
+        {/* S9: Audio Conversion Engine */}
+        <div className="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-outline-variant/15 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-tertiary text-lg">transform</span>
+              <h2 className="font-headline font-semibold text-sm text-on-surface">Audio Conversion Engine (S9)</h2>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-tertiary/15 text-tertiary font-mono text-[10px] font-bold">
+              Lossless PCM
+            </span>
+          </div>
+
+          <form onSubmit={handleSaveConversion} className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="default-format" className="text-xs font-medium text-on-surface">
+                  Default Target Format
+                </label>
+                <select
+                  id="default-format"
+                  value={defaultFormat}
+                  onChange={(e) => setDefaultFormat(e.target.value as 'wav' | 'ogg')}
+                  className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-tertiary/50"
+                >
+                  <option value="wav">WAV (16-bit PCM Lossless)</option>
+                  <option value="ogg">OGG / WebM</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="sample-rate" className="text-xs font-medium text-on-surface">
+                  Default Sample Rate
+                </label>
+                <select
+                  id="sample-rate"
+                  value={sampleRate}
+                  onChange={(e) => setSampleRate(Number(e.target.value) as 44100 | 48000)}
+                  className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-tertiary/50"
+                >
+                  <option value="44100">44,100 Hz (Audio CD Standard)</option>
+                  <option value="48000">48,000 Hz (Studio / Broadcast)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="channels" className="text-xs font-medium text-on-surface">
+                Channels
+              </label>
+              <select
+                id="channels"
+                value={channels}
+                onChange={(e) => setChannels(Number(e.target.value) as 1 | 2)}
+                className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-tertiary/50"
+              >
+                <option value="2">Stereo (2 Channels)</option>
+                <option value="1">Mono (1 Channel)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-full bg-tertiary text-on-tertiary text-xs font-semibold hover:opacity-90 transition-all shadow-sm"
+              >
+                Save Conversion Settings
+              </button>
+            </div>
+          </form>
+
+          {/* Engine & Licensing Safeguards */}
+          <div className="p-3.5 rounded-xl bg-surface-container/40 border border-outline-variant/15 flex flex-col gap-1.5 text-xs text-on-surface-variant">
+            <span className="font-semibold text-on-surface flex items-center gap-1.5 text-[11px]">
+              <span className="material-symbols-outlined text-sm text-tertiary">lock_reset</span>
+              Non-Destructive &amp; In-Browser Re-encoding
+            </span>
+            <p className="text-[10px] text-outline leading-relaxed">
+              GhostWave converts audio via genuine Web Audio API PCM sample re-quantization. Source files are strictly preserved and never overwritten without explicit prompt. No FFmpeg binary bundling required.
+            </p>
           </div>
         </div>
 

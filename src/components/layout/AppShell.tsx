@@ -8,15 +8,25 @@ import { QueueModal } from '../common/QueueModal';
 import { ScanModal } from '../common/ScanModal';
 import { AddToPlaylistModal } from '../common/AddToPlaylistModal';
 import { MetadataEditModal } from '../common/MetadataEditModal';
-
 import { NowPlayingDrawer } from '../common/NowPlayingDrawer';
+import { OnlineEnrichmentModal } from '../common/OnlineEnrichmentModal';
+import { AudioConversionModal } from '../common/AudioConversionModal';
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
-  const { togglePlayPause, nextTrack, prevTrack, layout } = useApp();
+  const {
+    togglePlayPause,
+    nextTrack,
+    prevTrack,
+    layout,
+    enrichmentModalTrack,
+    setEnrichmentModalTrack,
+    conversionModalTracks,
+    setConversionModalTracks,
+  } = useApp();
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -71,6 +81,16 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       <ScanModal />
       <AddToPlaylistModal />
       <MetadataEditModal />
+      <OnlineEnrichmentModal
+        track={enrichmentModalTrack}
+        onClose={() => setEnrichmentModalTrack(null)}
+      />
+      {conversionModalTracks.length > 0 && (
+        <AudioConversionModal
+          tracksToConvert={conversionModalTracks}
+          onClose={() => setConversionModalTracks([])}
+        />
+      )}
     </div>
   );
 };
