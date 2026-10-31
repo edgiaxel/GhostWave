@@ -1,157 +1,231 @@
-# GhostWave
+# 🎃 GhostWave — Local-First Music Player & AI Crate Curator
 
-A Halloween-themed, local-first music player and library manager for people who want to enjoy, organize, and customize their own music collection.
+![GhostWave Hero Banner](docs/assets/youtube_thumbnail.jpg)
 
-> **Project status:** Planning / initial implementation
-> **Hackathon:** Hacktoberfest Week 4 — Ghost in the Machine
-> **Primary targets:** Web + Tauri desktop (Windows and Linux first; macOS stretch)
-> **Web deployment:** Render
-> **Optional local AI:** Gemma through Ollama
+<p align="center">
+  <strong>A spooky, local-first music player, crate manager, and audio-reactive visualizer powered by local open-weight AI (Gemma 3 via Ollama).</strong>
+</p>
 
-## Product vision
+<p align="center">
+  <a href="#-the-ghost-in-the-machine-origin-story">The Origin Story</a> •
+  <a href="#-key-features">Key Features</a> •
+  <a href="#-architecture">Architecture</a> •
+  <a href="#-getting-started">Getting Started</a> •
+  <a href="#-running-local-ai-gemma-3">Local AI Setup</a> •
+  <a href="#-tauri-desktop-app">Tauri Desktop</a> •
+  <a href="#-testing--verification">QA & Testing</a> •
+  <a href="#-deployment-render">Deployment</a>
+</p>
 
-GhostWave turns a folder of local music into an organized, searchable, customizable listening experience. Its core works without an internet connection or AI model. Optional online enrichment and local open-weight AI add capabilities without becoming mandatory dependencies.
+---
 
-### Principles
+## ⚡ The "Ghost in the Machine" Origin Story
 
-- **Local-first:** music files remain under the user's control.
-- **Offline-capable:** core playback, library browsing, playlists, and manual organization work without internet.
-- **AI-optional:** no model is required for normal use.
-- **Review before changes:** metadata edits, renames, conversions, and other potentially destructive operations require preview and explicit approval.
-- **Modular:** feature areas have clear interfaces and can be developed and tested independently.
-- **Halloween by design:** polished spooky visual identity with dark/light themes and customizable palettes.
-- **Honest capability boundaries:** web and desktop filesystem permissions differ; the UI must communicate this.
+It was Halloween Eve. Outside, a violent seasonal thunderstorm battered the neighborhood. Then the grid blinked—and the house plunged into darkness. 
 
-## Core user experience
+When the power snapped back on ten minutes later, the fiber internet connection remained completely dead. We were supposed to host an intimate Halloween gathering with friends. My friend pulled out her phone to start the music playlist on a major cloud streaming app: **buffering error 404, no connection**. 
 
-1. Import local audio files or select a folder where supported.
-2. Scan supported files and read available metadata.
-3. Browse, search, and play tracks.
-4. Create and manage playlists.
-5. Review a library-health report for missing tags, inconsistent names, and possible duplicates.
-6. Preview and approve metadata changes and filename changes.
-7. Use a customizable audio-reactive visualizer.
-8. Optionally connect a local model for natural-language playlist creation and metadata suggestions.
-9. Optionally use online services to look up candidate metadata, artwork, or lyrics.
+I plugged in my offline backup drive filled with gigabytes of local music: thousands of anime themes, Vocaloid tracks, electronic synths, and classical recordings. But we ran into an immediate wall: 
+- Half the files had missing ID3 tags or Japanese unicode filenames (`Matsuri（Official Video）(MP3_160K).mp3`).
+- We wanted a high-energy, fast-paced electronic Halloween workout playlist, but nobody wanted to spend 45 minutes manually browsing through 2,000 files in a generic file manager.
+- Every mainstream "smart" playlist generator requires an active internet connection to cloud LLMs that scrape your data and fail when your modem goes red.
 
-## Capability tiers
+**Why should playing and organizing your own local music depend on external servers?**
 
-### Local Core — no internet or AI required
+That night, **GhostWave** was born:
+A **local-first, offline-capable music player** that pairs a high-performance audio engine and Halloween-inspired reactive visualizer with **local open-weight AI (Google's Gemma 3 4B running on your local machine via Ollama)**. When the storm hits and the internet dies, the ghost in the machine awakens—curating smart playlists, diagnosing missing metadata, and running reactive visualizers directly on your local hardware.
 
-- Import supported audio files.
-- Read metadata and browse/search the library.
-- Play, pause, seek, skip, and manage a queue.
-- Create, edit, and delete playlists.
-- Manually edit supported metadata.
-- Detect missing tags, inconsistent naming, and possible duplicates.
-- Preview file-renaming templates.
-- Use basic visualizers and themes.
-- Persist app data locally.
+---
 
-### Online Enrichment — optional internet
+## 🎧 Key Features
 
-- Search for candidate metadata using suitable providers.
-- Look up album artwork and lyrics when a suitable provider and usage terms permit it.
-- Show candidate sources and allow users to review matches.
-- Never require online services for core playback.
+### 1. 🗄️ Crate Deck (Local Music Vault)
+- **Zero-Cloud Audio Indexing:** Reads MP3, FLAC, WAV, OGG, and AAC directly into an IndexedDB catalog via `music-metadata-browser`.
+- **Zero File Mutation Invariant:** Your source music library is treated as a read-only vault. Files are never overwritten or deleted without explicit user confirmation.
+- **Deep Search & Filtering:** Instant fuzzy filtering by title, artist, album, format pill filters, and customizable sort orders.
+- **Dual View Modes:** Seamlessly switch between compact DJ Table view and rich Album Art Grid cards.
 
-### Local AI — optional local model/runtime
+### 2. 🎛️ Audio Deck & Slide-Up Spectral Visualizer
+- **Web Audio API Engine:** Real-time decoding, elapsed time tracking, seamless track queueing, volume control with mute toggle, shuffle, and cycle repeat modes (Off / All / Track).
+- **Halloween Audio-Reactive Visualizers:** Real-time frequency analysis with selectable styles (Waveform, Neon Bats, Spectral Columns, and Spooky Jack-o'-Lantern pulses) in Dark and Light Halloween palettes.
+- **Queue Management:** Slide-up queue drawer with drag reordering, removal, and auto-population from crates.
 
-- Natural-language playlist requests.
-- Suggested metadata corrections and filename patterns.
-- Library-cleanup summaries.
-- AI output must be structured, validated, and reviewable. It must never execute arbitrary generated code or modify files without approval.
+### 3. 🤖 Local AI Playlist Curator (Gemma 3 + Ollama)
+- **100% Offline AI Invocations:** Communicates with your local Ollama daemon (`http://127.0.0.1:11434`) using `gemma3:4b`.
+- **Natural-Language Understanding:** Ask for *"Fast electronic workout tracks with punchy bass"* or *"Spooky atmospheric ambient tracks under 30 minutes"*.
+- **Strict Structured Schema:** Gemma 3 outputs deterministic JSON schemas with `crateName`, `description`, `trackIds`, and reasoning.
+- **Hallucination Shield:** Output track IDs are strictly validated against existing IndexedDB records. Any fabricated tracks are discarded before presentation.
+- **Human-in-the-Loop Review:** Preview proposed track selections, verify duration limits, and save proposals to Crates with one click.
 
-## MVP priorities
+### 4. 🩺 Library Health & Non-Destructive Tagging
+- **Deterministic Health Audits:** Flags missing tags, unicode inconsistencies, duplicate hashes, and metadata collisions.
+- **Side-by-Side Tag Diff Inspector:** Compare current metadata with proposed fixes before committing changes.
+- **Safe Renaming Templates:** Preview filename changes (e.g. `{artist} - {title}`) with collision detection before disk writing.
 
-**MVP target:** one coherent workflow from local import to playback, playlist creation, reviewable cleanup, a visualizer, and one local-AI playlist task.
+### 5. 🌐 Online Enrichment & External Intelligence (Optional)
+- **MusicBrainz Integration:** Query open recording databases with rate-limit compliance.
+- **Cover Art Archive & LRCLIB:** Preview verified community release artwork and plain/synced lyrics.
+- **SerpApi Search Partner:** Search Google Knowledge Graph and organic web results for unindexed tracks; keys remain masked in local browser storage.
+- **Graceful Offline Degradation:** If internet is absent, all core local audio and AI features continue working seamlessly.
 
-1. App shell and navigation.
-2. Local audio import and metadata scan.
-3. Playback controls and queue.
-4. Library search and playlist CRUD.
-5. Library-health report and safe metadata/rename preview.
-6. Halloween dark/light themes and one working visualizer.
-7. Optional local model connection and natural-language playlist creation.
-8. Basic web/desktop capability separation and error states.
+### 6. 🔄 16-Bit PCM Audio Converter
+- **Non-Destructive Transcoding:** Converts input audio to uncompressed WAV or OGG using Web Audio API buffer rendering.
+- **Configurable Audio Specs:** Sample rate (44.1kHz, 48kHz, 96kHz), channels (Mono/Stereo), and custom filename suffixes.
 
-### Later or stretch
+### 7. 📊 History & Transparent Recommendations
+- **Local Scrobbling:** Automatically records completed plays (>= 30s or >= 50% duration) versus skips.
+- **Listening Analytics:** Tracks total listening sessions, hours, skip rates, and favorite genres.
+- **Transparent Recommendations:** Offline recommendation engine prioritizing unplayed gems with clear human-readable rationales.
+- **Local Control:** Toggle history tracking on/off anytime or purge records with one click.
 
-- Batch audio conversion (start with a small, tested set of formats).
-- Online metadata and album-art lookup.
-- Lyrics display and synchronization.
-- Listening-history recommendations.
-- Additional visualizer presets.
-- More audio formats and advanced conversion controls.
-- macOS packaging.
-- Advanced chord detection, source separation, or singing transcription are out of scope for the hackathon MVP.
+### 8. 🛡️ Privacy-First Sentry Telemetry
+- **Diagnostic Observability:** Monitors application crashes and AI prompt latencies.
+- **Sanitized Telemetry:** Local filesystem paths, audio bytes, filenames, listening history, and user prompt strings are scrubbed by `beforeSend` filters.
+- **User Controlled:** Can be disabled at any time in Settings.
 
-## Architecture direction
+---
 
-Keep UI and domain logic modular. Platform-specific capabilities should sit behind interfaces:
+## 🏛️ Architecture
 
-- `AudioLibrary`: indexed tracks and metadata.
-- `Playback`: current track, queue, transport, and playback state.
-- `Playlists`: playlist CRUD and membership.
-- `Metadata`: parsing, validation, and proposed changes.
-- `FileOperations`: platform-specific read/write/rename/conversion operations.
-- `Visualizer`: audio-reactive rendering and settings.
-- `OnlineProviders`: optional external lookup.
-- `LocalAI`: optional model connection and structured task output.
-- `Settings`: themes, provider configuration, and user preferences.
+GhostWave uses a **modular, skeleton-first container architecture**:
 
-The exact folder layout and libraries should be confirmed after repository inspection and a minimal technical prototype. Avoid prematurely building an elaborate plugin framework.
+```
+GhostWave Architecture
+│
+├── src/
+│   ├── components/
+│   │   ├── common/           # Dialogs, modals, ScanModal, OnlineEnrichmentModal
+│   │   ├── layout/           # AppShell, SidebarDeck, PlayerControls, VisualizerDrawer
+│   │   └── player/           # Canvas visualizer renderers, audio transport
+│   ├── context/
+│   │   └── AppContext.tsx    # Single source of truth (Library, Queue, Settings, Toast)
+│   ├── screens/
+│   │   ├── LibraryScreen.tsx # Crate deck table/grid view
+│   │   ├── PlaylistsScreen   # Saved crates management
+│   │   ├── HealthCleanup     # Health audit and proposed tag diffs
+│   │   ├── LocalAiScreen.tsx # Ollama Gemma 3 natural-language agent
+│   │   ├── ListeningHistory  # Playback analytics and recommendations
+│   │   └── SettingsScreen    # Platform config, Ollama endpoint, Sentry, SerpApi
+│   ├── services/
+│   │   ├── ai/               # OllamaClient, AiPlaylistService, prompt templates
+│   │   ├── audio/            # AudioPlayerEngine, AudioConversionService
+│   │   ├── enrichment/       # MusicBrainz, SerpApi, CoverArtArchive, LRCLIB
+│   │   ├── history/          # HistoryService, scrobbling, recommendations
+│   │   ├── platform/         # WebFilePlatform vs TauriFilePlatform adapters
+│   │   └── telemetry/        # SentryTelemetry with privacy sanitizers
+│   └── types/                # Domain models: Track, Crate, Proposal, PlaybackEvent
+└── src-tauri/                # Native Tauri 2 Rust desktop wrapper
+```
 
-## Privacy and safety
+---
 
-- Do not upload music files or private listening history by default.
-- Do not put private API keys in frontend code.
-- Never overwrite or delete original files silently.
-- Preview batch operations, detect collisions, and report failures.
-- Treat model output and file metadata as untrusted input.
-- Validate model output against schemas and allow only known application operations.
-- Explain which capabilities require internet, desktop permissions, or a configured local model.
+## 🚀 Getting Started
 
-## Development workflow
+### Prerequisites
+- **Node.js:** v20+ or v22+
+- **npm:** v9+
+- *(Optional for AI)* **Ollama:** Installed locally from [ollama.com](https://ollama.com)
 
-See [STAGES.md](STAGES.md) for staged implementation and completion gates, [APP-WORKFLOW.md](APP-WORKFLOW.md) for screen behavior, and [AGENT.md](AGENT.md) for coding-agent instructions.
+### Installation & Local Web Dev
 
-The workflow is **skeleton first, then modular implementation**:
-1. Inspect the repository and settle minimal architecture.
-2. Create the app shell, routes, module boundaries, and placeholder states.
-3. Smoke-test navigation and the shared data contracts.
-4. Implement one module at a time.
-5. Test a module in isolation, integrate it with existing modules, then run regression tests.
-6. Axel reviews the evidence and explicitly approves moving to the next stage.
+```bash
+# Clone the repository
+git clone https://github.com/edgiaxel/GhostWave.git
+cd GhostWave
 
-This does not mean postponing all integration until the end. A small early end-to-end smoke test is required to expose architectural problems before the modules grow.
+# Install dependencies
+npm install
 
-## Partners and optional integrations
+# Start Vite development server
+npm run dev
+```
 
-- **Gemma via Ollama:** primary local open-weight model candidate.
-- **Render:** web deployment and potentially a small backend for online provider requests. The local model remains on the user's machine.
-- **SerpApi:** optional web-search candidate only if search results add real value beyond a dedicated music metadata provider.
-- **Sentry:** optional diagnostics if setup is quick and privacy implications are documented.
-- **MusicBrainz:** candidate structured metadata provider, subject to its policies and rate limits.
-- **FFmpeg:** candidate for desktop conversion, subject to codec/build and distribution-license review.
+Open your browser at `http://localhost:5173`.
 
-Partner usage does not guarantee prize eligibility. Verify the challenge's current rules and demonstrate a meaningful use case before claiming a category.
+---
 
-## Development setup
+## 🤖 Running Local AI (Gemma 3)
 
-The exact commands depend on the repository's selected package manager and installed dependencies. After inspecting the repository:
+GhostWave connects to Ollama over its standard local API endpoint (`http://127.0.0.1:11434`).
 
-1. Install the supported Node.js version and package manager.
-2. Install project dependencies using the repository's lockfile.
-3. Run the frontend development server.
-4. For local AI, install Ollama separately, pull a compatible Gemma model, and configure the model endpoint.
-5. For desktop development, install the prerequisites required by Tauri 2 and the target operating system.
-6. Use the actual scripts and environment variables documented in the repository; do not invent commands or claim a build works without running it.
+1. Install Ollama:
+   ```bash
+   curl -fsSL https://ollama.com/install.sh | sh
+   ```
+2. Pull the Gemma 3 4B model:
+   ```bash
+   ollama pull gemma3:4b
+   ```
+3. Start the Ollama server:
+   ```bash
+   ollama serve
+   ```
+4. In GhostWave, open **Settings & Platform** $\rightarrow$ **Local AI (Ollama)**:
+   - Endpoint: `http://127.0.0.1:11434`
+   - Model: `gemma3:4b`
+   - Click **Test Connection** to confirm connectivity.
 
-## Definition of a credible MVP
+---
 
-A new user can import a small local music collection, play a track, search the library, create a playlist, review a proposed correction, see an audio-reactive visualization, and optionally ask a configured local model to build a playlist from existing library metadata. Core playback and manual organization still work when internet and AI are unavailable.
+## 🖥️ Tauri Desktop App
 
-## License and attribution
+GhostWave is packaged as a native desktop application using **Tauri 2**.
 
-Choose a project license before public release. Review all dependency licenses, model licenses, audio codecs, visualizer packages, fonts, icons, artwork, and sample music. Do not distribute copyrighted sample tracks or assume a service's search results are freely redistributable.
+### Build Desktop Binaries (Linux / Windows)
+
+```bash
+# Install Linux development dependencies (Ubuntu/Debian)
+sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev
+
+# Build native desktop package (.deb, .AppImage, or .exe)
+npx tauri build
+```
+
+Generated packages will be located in:
+`src-tauri/target/release/bundle/`
+
+### Automated GitHub Actions CI
+The repository includes automated CI in [`.github/workflows/desktop-build.yml`](.github/workflows/desktop-build.yml) compiling native releases for both Ubuntu Linux and Windows x64.
+
+---
+
+## 🧪 Testing & Verification
+
+GhostWave enforces a zero-mock integration policy with automated regression suites:
+
+```bash
+# Run Vitest unit & integration suites (12 suites, 121 tests)
+npm test
+
+# Run Playwright End-to-End browser suites (10 suites, 30 tests)
+npm run test:e2e
+```
+
+### Test Coverage Highlights:
+- **Suite 01:** Shell navigation, theme toggling (Dark/Light Halloween), split pane resize handles, settings persistence.
+- **Suite 02:** Real library import from 74-track audio vault, multi-field search, format filters, corrupt file handling.
+- **Suite 03:** Audio playback progression, next/previous tracks, seek bar, volume, shuffle, repeat, slide-up visualizer drawer.
+- **Suite 04:** Crate creation, adding tracks, reordering, title edits, deletion confirmation.
+- **Suite 05:** Library health audits, tag proposal diffs, inline edits, safe rename previews.
+- **Suite 06:** Audio conversion to 16-bit PCM WAV, non-destructive source file preservation.
+- **Suite 07:** Playback scrobbling (30s/50% boundary), skip rates, transparent recommendation engine.
+- **Suite 08:** Real local Ollama daemon connection, Gemma 3 4B inference, structured JSON validation.
+- **Suite 09:** MusicBrainz candidate matching, Cover Art Archive, LRCLIB synced lyrics, SerpApi credentials.
+- **Suite 10:** Sentry envelope verification, "Break the world" error test, and privacy path scrubbers.
+
+---
+
+## ☁️ Deployment (Render)
+
+GhostWave is deployed as a static web application on **Render**:
+
+- **Blueprint File:** [`render.yaml`](render.yaml)
+- **Publish Path:** `./dist`
+- **Build Command:** `npm install && npm run build`
+- **SPA Routing:** Configured via `render.yaml` routes rewrite and `public/_redirects` (`/* /index.html 200`).
+
+---
+
+## 📜 License
+
+MIT License. Developed for the **Hacktoberfest Open-Source AI Challenge Week 4: Ghost in the Machine**.
