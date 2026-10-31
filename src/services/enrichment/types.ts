@@ -22,6 +22,8 @@ export interface EnrichmentCandidate {
   coverArtUrl?: string;
   releaseId?: string; // Release MBID for Cover Art Archive
   source: 'musicbrainz' | 'serpapi' | 'manual';
+  sourceUrl?: string; // Direct link to web candidate (e.g. from SerpApi search result)
+  snippet?: string; // Web snippet for transparency before user review
   confidence: number; // 0.0 to 1.0
   confidenceRationale: string;
 }

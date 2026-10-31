@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.12.0] - Sentry AI Observability, SerpApi Enrichment & Tauri CI Workflow (2026-11-01)
+
+### Added
+- **Sentry AI Observability & Privacy-Preserving Telemetry (`src/services/telemetry/SentryTelemetry.ts`, `src/screens/SettingsScreen.tsx`, `src/main.tsx`)**:
+  - Initialized `@sentry/react` early with `tracesSampleRate: 1.0` and `browserTracingIntegration()`.
+  - Privacy-first scrubbing architecture: `beforeSend` and `beforeBreadcrumb` hooks scrub all local file paths, audio data URLs, client IP addresses, user listening history, and raw user prompt strings.
+  - Dedicated lifecycle telemetry breadcrumbs and events: `ai.request.started`, `ai.request.completed`, `ai.response.invalid`, `ai.playlist.generated`, `ai.track.rejected`, `ai.provider.unavailable`, `enrichment.lookup.failed`, `tool.execution.failure`, and manual test error trigger (`triggerTestError()`).
+  - Settings UI card: Live telemetry toggle, masked DSN input, explicit privacy disclosures listing what is scrubbed vs what is captured, and the "Break the world" intentional test error button with `Sentry.logger.info`.
+- **SerpApi Partner Integration & Online Enrichment (`src/services/enrichment/SerpApiProvider.ts`, `src/components/common/OnlineEnrichmentModal.tsx`)**:
+  - SerpApi music search provider configured with client credentials stored in settings, masked in UI.
+  - Dual extraction engine: Searches Google Knowledge Graph for authoritative album/artist/year metadata and parses organic snippets with web source URLs and snippet quotes.
+  - Web source preview and verification badge in `OnlineEnrichmentModal.tsx` showing source link and snippet quote with a clear disclaimer: "Notice: Web search snippets are candidate suggestions and not authoritative music metadata. Verify before applying."
+  - Strict human-in-the-loop invariant: Proposals remain strictly in `pending` review state and never modify local audio files without explicit user review and confirmation.
+- **Tauri 2 Packaging & GitHub Actions CI Workflow (`src-tauri/`, `.github/workflows/desktop-build.yml`)**:
+  - Scaffolded Tauri 2 desktop bundler configuration (`tauri.conf.json`) with strict Content Security Policy allowing local loopback (`http://127.0.0.1:11434`), Sentry ingest, and SerpApi endpoints.
+  - Generated complete Tauri multi-platform app icon set (PNGs, ICNS, ICO) from `public/ghostwave-logo.svg` across all required desktop resolutions.
+  - Created automated GitHub Actions multi-platform release workflow (`.github/workflows/desktop-build.yml`) targeting both Ubuntu Linux (`libwebkit2gtk-4.1-dev`, `libgtk-3-dev`) and Windows (`windows-latest` MSVC) using `@tauri-apps/cli` and `tauri-apps/action-tauri@v2`.
+  - Added `src-tauri/target/` to `.gitignore` and scoped Vitest test matching to `src/**/*.{test,spec}.{ts,tsx}`.
+- **Comprehensive Unit & Integration Test Suite (`src/test/sentry-serpapi.test.tsx`)**:
+  - 11 unit tests covering Sentry event breadcrumbs, invalid JSON schema logging, provider offline alerts, intentional error triggering, SerpApi key validation, Knowledge Graph parsing, organic snippet extraction, HTTP error breadcrumbs, and candidate proposal construction.
+  - 100% test pass rate: 121 tests passing across 12 test suites; clean production build.
+
+---
+
 ## [0.11.0] - S10: Listening History & Recommendations, S11: Web & Tauri Integration (2026-10-31)
 
 ### Added

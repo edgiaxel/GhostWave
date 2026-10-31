@@ -6,6 +6,7 @@
 
 import { Track, Playlist } from '../../types';
 import { LocalAiProvider } from './LocalAiProvider';
+import { sentryTelemetry } from '../telemetry/SentryTelemetry';
 
 export interface PlaylistQueryPlan {
   name: string;
@@ -288,18 +289,75 @@ ${JSON.stringify(compactCatalog)}
 
 Select appropriate tracks, choose an evocative crate name, and describe your curation rationale.`;
 
-    const result = await this.provider.generate(promptText, {
-      model: modelOverride,
-      systemPrompt,
-      format: PLAYLIST_QUERY_SCHEMA,
-      temperature: 0.2,
-      timeoutMs: 30000,
-    });
+    const startTime = Date.now();
+    const modelTarget = modelOverride || 'default';
+    sentryTelemetry.captureAiRequestStarted({ model: modelTarget, taskType: 'playlist_proposal' });
 
-    const parsed = result.parsedJson ?? JSON.parse(result.response);
-    const plan = AiPlaylistService.validatePlan(parsed);
+    let result;
+    try {
+      result = await this.provider.generate(promptText, {
+        model: modelOverride,
+        systemPrompt,
+        format: PLAYLIST_QUERY_SCHEMA,
+        temperature: 0.2,
+        timeoutMs: 30000,
+      });
+
+      sentryTelemetry.captureAiRequestCompleted({
+        model: result.model || modelTarget,
+        taskType: 'playlist_proposal',
+        durationMs: result.durationMs || (Date.now() - startTime),
+        success: true,
+      });
+    } catch (err: unknown) {
+      sentryTelemetry.captureAiRequestCompleted({
+        model: modelTarget,
+        taskType: 'playlist_proposal',
+        durationMs: Date.now() - startTime,
+        success: false,
+      });
+      throw err;
+    }
+
+    let parsed;
+    try {
+      parsed = result.parsedJson ?? JSON.parse(result.response);
+    } catch (err: unknown) {
+      sentryTelemetry.captureAiResponseInvalid({
+        model: result.model || modelTarget,
+        category: 'json_syntax_error',
+        reason: err instanceof Error ? err.message : 'JSON parse failure',
+      });
+      throw err;
+    }
+
+    let plan: PlaylistQueryPlan;
+    try {
+      plan = AiPlaylistService.validatePlan(parsed);
+    } catch (err: unknown) {
+      sentryTelemetry.captureAiResponseInvalid({
+        model: result.model || modelTarget,
+        category: 'schema_validation_error',
+        reason: err instanceof Error ? err.message : 'Plan schema violation',
+      });
+      throw err;
+    }
+
     const { resolvedTracks, totalDurationSeconds, hallucinatedTrackIds } =
       AiPlaylistService.resolveTracks(plan, libraryTracks);
+
+    if (hallucinatedTrackIds.length > 0) {
+      sentryTelemetry.captureAiTrackRejected({
+        model: result.model || modelTarget,
+        rejectedCount: hallucinatedTrackIds.length,
+      });
+    }
+
+    sentryTelemetry.captureAiPlaylistGenerated({
+      model: result.model || modelTarget,
+      proposedTrackCount: resolvedTracks.length,
+      durationSeconds: totalDurationSeconds,
+    });
 
     const minutes = Math.floor(totalDurationSeconds / 60);
     const seconds = totalDurationSeconds % 60;

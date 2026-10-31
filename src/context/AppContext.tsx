@@ -54,6 +54,7 @@ import {
   RecommendationItem,
 } from '../services/history/types';
 import { HistoryService } from '../services/history/HistoryService';
+import { sentryTelemetry, DEFAULT_SENTRY_DSN } from '../services/telemetry/SentryTelemetry';
 
 export interface ToastMessage {
   id: string;
@@ -161,6 +162,7 @@ interface AppContextType {
   toggleHistoryTracking: (enabled: boolean) => void;
   refreshRecommendations: () => void;
   generateAiHistorySummary: () => Promise<string>;
+  triggerSentryTestError: () => void;
 }
 
 const INITIAL_SETTINGS: AppSettings = {
@@ -173,9 +175,16 @@ const INITIAL_SETTINGS: AppSettings = {
     status: 'disconnected',
   },
   onlineEnrichment: {
-    enabled: false,
+    enabled: true,
     provider: 'musicbrainz',
     lookupAlbumArt: true,
+    lookupCoverArt: true,
+    lookupLyrics: true,
+    serpApiKey: 'abc5a9a5e25bbae878b1869aff11b4a7533aac084a1db083b6e463de374d33ff',
+  },
+  sentry: {
+    enabled: true,
+    dsn: DEFAULT_SENTRY_DSN,
   },
   history: {
     enabled: true,
@@ -547,6 +556,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     root.setAttribute('data-accent', settings.accentPalette);
     localStorage.setItem('ghostwave_settings', JSON.stringify(settings));
     dbRepository.saveSettings(settings).catch(() => {});
+    if (settings.sentry) {
+      sentryTelemetry.init(settings.sentry);
+    }
   }, [settings]);
 
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
@@ -1665,6 +1677,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return HistoryService.generateTasteProfileSummary(listeningStats);
   }, [aiConnection.state, listeningStats, settings.localAi.model]);
 
+  const triggerSentryTestError = useCallback(() => {
+    sentryTelemetry.triggerTestError();
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -1762,6 +1778,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleHistoryTracking,
         refreshRecommendations,
         generateAiHistorySummary,
+        triggerSentryTestError,
       }}
     >
       {children}

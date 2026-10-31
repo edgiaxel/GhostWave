@@ -10,6 +10,7 @@ import {
   GenerateOptions,
   GenerateResult,
 } from './LocalAiProvider';
+import { sentryTelemetry } from '../telemetry/SentryTelemetry';
 
 export const DEFAULT_OLLAMA_ENDPOINT = 'http://127.0.0.1:11434';
 export const DEFAULT_AI_MODEL = 'gemma3:4b';
@@ -120,6 +121,11 @@ export class OllamaClient implements LocalAiProvider {
       const latencyMs = Math.round(performance.now() - start);
 
       if (err instanceof Error) {
+        sentryTelemetry.captureAiProviderUnavailable({
+          endpoint: this.endpoint,
+          error: err.message,
+        });
+
         if (err.name === 'AbortError') {
           return {
             isAvailable: false,

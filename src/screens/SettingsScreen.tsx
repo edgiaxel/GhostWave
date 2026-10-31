@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { AppSettings } from '../types';
 import { DEFAULT_OLLAMA_ENDPOINT, DEFAULT_AI_MODEL } from '../services/ai/OllamaClient';
+import { DEFAULT_SENTRY_DSN } from '../services/telemetry/SentryTelemetry';
 
 export const SettingsScreen: React.FC = () => {
   const {
@@ -14,6 +15,7 @@ export const SettingsScreen: React.FC = () => {
     testAiConnection,
     discoverAiModels,
     sendTestAiPrompt,
+    triggerSentryTestError,
   } = useApp();
 
   const [endpoint, setEndpoint] = useState(settings.localAi.endpoint || DEFAULT_OLLAMA_ENDPOINT);
@@ -49,6 +51,37 @@ export const SettingsScreen: React.FC = () => {
   const [channels, setChannels] = useState<1 | 2>(
     (settings.audioConversion?.channels as 1 | 2) || 2
   );
+
+  // Sentry Observability State
+  const [sentryEnabled, setSentryEnabled] = useState(settings.sentry?.enabled ?? true);
+  const [sentryDsn, setSentryDsn] = useState(settings.sentry?.dsn || DEFAULT_SENTRY_DSN);
+
+  const handleSaveSentry = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings({
+      sentry: {
+        enabled: sentryEnabled,
+        dsn: sentryDsn.trim() || DEFAULT_SENTRY_DSN,
+      },
+    });
+    addToast({
+      title: 'Observability Settings Saved',
+      message: sentryEnabled ? 'Sentry diagnostic telemetry active.' : 'Sentry telemetry disabled.',
+      type: 'success',
+    });
+  };
+
+  const handleTriggerTestError = () => {
+    try {
+      triggerSentryTestError();
+    } catch (err: unknown) {
+      addToast({
+        title: 'Sentry Test Event Logged',
+        message: err instanceof Error ? err.message : 'Captured verified error',
+        type: 'info',
+      });
+    }
+  };
 
   const handleSaveEnrichment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -631,6 +664,78 @@ export const SettingsScreen: React.FC = () => {
             <p className="text-[10px] text-outline leading-relaxed">
               GhostWave converts audio via genuine Web Audio API PCM sample re-quantization. Source files are strictly preserved and never overwritten without explicit prompt. No FFmpeg binary bundling required.
             </p>
+          </div>
+        </div>
+
+        {/* Sentry Observability & Application Monitoring */}
+        <div className="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-outline-variant/15 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-lg">monitoring</span>
+              <h2 className="font-headline font-semibold text-sm text-on-surface">AI &amp; App Observability (Sentry)</h2>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sentryEnabled}
+                onChange={(e) => setSentryEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+
+          <form onSubmit={handleSaveSentry} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="sentry-dsn" className="text-xs font-medium text-on-surface">
+                Sentry Project DSN
+              </label>
+              <input
+                id="sentry-dsn"
+                type="password"
+                value={sentryDsn}
+                onChange={(e) => setSentryDsn(e.target.value)}
+                placeholder="https://...@ingest.sentry.io/..."
+                disabled={!sentryEnabled}
+                className="bg-surface-container text-on-surface text-xs px-3.5 py-2.5 rounded-xl border border-outline-variant/20 outline-none focus:border-primary/50 font-mono disabled:opacity-50"
+              />
+              <span className="text-[10px] text-outline">
+                Connected to project <span className="font-mono text-primary font-medium">ghostwave</span> (org: <span className="font-mono text-primary font-medium">axel-shuu</span>).
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <button
+                type="submit"
+                disabled={!sentryEnabled}
+                className="px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 transition-all shadow-sm disabled:opacity-40"
+              >
+                Save Sentry Settings
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTriggerTestError}
+                disabled={!sentryEnabled}
+                className="px-4 py-2 rounded-full bg-error/15 hover:bg-error/25 text-error text-xs font-semibold transition-all border border-error/30 flex items-center gap-1.5 disabled:opacity-40"
+                title="Throws a test error to verify Sentry event ingest"
+              >
+                <span className="material-symbols-outlined text-sm">bug_report</span>
+                <span>Break the world</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Telemetry Disclosure & Privacy Safeguards */}
+          <div className="p-3.5 rounded-xl bg-surface-container/40 border border-outline-variant/15 flex flex-col gap-1.5 text-xs text-on-surface-variant">
+            <span className="font-semibold text-on-surface flex items-center gap-1.5 text-[11px]">
+              <span className="material-symbols-outlined text-sm text-primary">security</span>
+              Sanitized Telemetry Disclosure
+            </span>
+            <ul className="text-[10px] text-outline leading-relaxed list-disc list-inside flex flex-col gap-0.5">
+              <li><strong className="text-on-surface">Captured:</strong> AI request duration, schema parsing failures, model offline/timeout errors, tool status codes, unhandled runtime crashes.</li>
+              <li><strong className="text-secondary">Strictly Excluded:</strong> Audio file bytes, music file paths, filenames, personal listening history, and raw user prompts.</li>
+            </ul>
           </div>
         </div>
 

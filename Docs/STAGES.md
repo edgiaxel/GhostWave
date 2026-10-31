@@ -383,10 +383,10 @@ Add a limit if a test takes longer than expected, kill it and just skip it and f
 ## S12 — Release, deployment, and submission
 
 ### S12.1 — Quality pass
-- [ ] Run available tests, lint, typecheck, and production builds.
-- [ ] Test core workflows and failure states.
-- [ ] Remove debug secrets and unintended logging.
-- [ ] Verify no user data is uploaded unexpectedly.
+- [x] Run available tests, lint, typecheck, and production builds.
+- [x] Test core workflows and failure states.
+- [x] Remove debug secrets and unintended logging.
+- [x] Verify no user data is uploaded unexpectedly.
 
 ### S12.2 — Deployment and distribution
 - [ ] Deploy web version to Render.

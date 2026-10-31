@@ -367,6 +367,35 @@ export const OnlineEnrichmentModal: React.FC<OnlineEnrichmentModalProps> = ({ tr
                   <span className="text-on-surface-variant line-through">{track.year || '(empty)'}</span>
                   <span className="text-secondary font-semibold">{selectedCandidate.year || '(unknown)'}</span>
                 </div>
+
+                {selectedCandidate.source === 'serpapi' && (
+                  <div className="mt-2 p-3 rounded-lg bg-surface-container border border-outline-variant/20 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-tertiary flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm">link</span>
+                        Search Partner Source
+                      </span>
+                      {selectedCandidate.sourceUrl && (
+                        <a
+                          href={selectedCandidate.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary hover:underline text-[11px] truncate max-w-xs"
+                        >
+                          {selectedCandidate.sourceUrl}
+                        </a>
+                      )}
+                    </div>
+                    {selectedCandidate.snippet && (
+                      <p className="text-[11px] text-on-surface-variant italic leading-relaxed">
+                        &ldquo;{selectedCandidate.snippet}&rdquo;
+                      </p>
+                    )}
+                    <span className="text-[10px] text-outline">
+                      Notice: Web search snippets are candidate suggestions and not authoritative music metadata. Verify before applying.
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

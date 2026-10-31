@@ -29,3 +29,14 @@ lerna-debug.log*
 # Environment variables
 .env
 .env.production
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Tauri
+src-tauri/target/
+

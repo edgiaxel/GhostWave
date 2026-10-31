@@ -126,6 +126,10 @@ export interface AppSettings {
     lookupLyrics?: boolean;
     serpApiKey?: string;
   };
+  sentry?: {
+    enabled: boolean;
+    dsn?: string;
+  };
   audioConversion?: {
     defaultFormat: 'wav' | 'ogg';
     sampleRate: 44100 | 48000;

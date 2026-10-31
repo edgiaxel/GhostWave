@@ -15,6 +15,7 @@ import {
   CoverArtResult,
   LyricsResult,
 } from './types';
+import { sentryTelemetry } from '../telemetry/SentryTelemetry';
 
 export class OnlineEnrichmentService {
   private musicBrainz = new MusicBrainzProvider();
@@ -46,6 +47,10 @@ export class OnlineEnrichmentService {
         candidates.push(...mbResults);
       } catch (err: unknown) {
         console.warn('GhostWave: MusicBrainz search fallback:', err);
+        sentryTelemetry.captureEnrichmentLookupFailed({
+          provider: 'musicbrainz',
+          errorCategory: err instanceof Error ? err.name : 'UnknownError',
+        });
       }
     }
 
