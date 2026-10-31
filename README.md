@@ -21,19 +21,21 @@
 
 ## ⚡ The "Ghost in the Machine" Origin Story
 
-It was Halloween Eve. Outside, a violent seasonal thunderstorm battered the neighborhood. Then the grid blinked—and the house plunged into darkness. 
+*(An imagined product scenario inspired by seasonal thunderstorms and connectivity concerns)*
 
-When the power snapped back on ten minutes later, the fiber internet connection remained completely dead. We were supposed to host an intimate Halloween gathering with friends. My friend pulled out her phone to start the music playlist on a major cloud streaming app: **buffering error 404, no connection**. 
+Imagine Halloween Eve. Outside, a violent seasonal thunderstorm batters the neighborhood. The grid blinks—and the house plunges into darkness. 
 
-I plugged in my offline backup drive filled with gigabytes of local music: thousands of anime themes, Vocaloid tracks, electronic synths, and classical recordings. But we ran into an immediate wall: 
-- Half the files had missing ID3 tags or Japanese unicode filenames (`Matsuri（Official Video）(MP3_160K).mp3`).
-- We wanted a high-energy, fast-paced electronic Halloween workout playlist, but nobody wanted to spend 45 minutes manually browsing through 2,000 files in a generic file manager.
-- Every mainstream "smart" playlist generator requires an active internet connection to cloud LLMs that scrape your data and fail when your modem goes red.
+When power snaps back on ten minutes later, the internet connection is dead. A gathering of friends is waiting for music, but the host's phone streaming app hangs on a spinning wheel: **buffering error 404, no connection**.
+
+An offline backup drive of local music is plugged in—thousands of anime themes, Vocaloid tracks, electronic synths, and classical recordings. But an immediate wall appears:
+- Half the files have missing ID3 tags or unicode filenames (`Matsuri（Official Video）(MP3_160K).mp3`).
+- Everyone wants a high-energy, fast-paced electronic Halloween playlist, but nobody wants to spend 45 minutes manually browsing through 2,000 files in a generic file explorer.
+- Mainstream "smart" playlist generators require active cloud connections to remote LLMs that scrape personal listening data and fail when the network dies.
 
 **Why should playing and organizing your own local music depend on external servers?**
 
-That night, **GhostWave** was born:
-A **local-first, offline-capable music player** that pairs a high-performance audio engine and Halloween-inspired reactive visualizer with **local open-weight AI (Google's Gemma 3 4B running on your local machine via Ollama)**. When the storm hits and the internet dies, the ghost in the machine awakens—curating smart playlists, diagnosing missing metadata, and running reactive visualizers directly on your local hardware.
+That scenario is the creative spark behind **GhostWave**:
+A **local-first music player** that pairs a high-performance audio engine and Halloween-inspired reactive visualizer with **local open-weight AI (Google's Gemma 3 4B running on your local machine via Ollama)**. When connectivity drops, the ghost in the machine awakens—curating smart playlists, diagnosing missing metadata, and running reactive visualizers directly on your local hardware without remote AI subscriptions.
 
 ---
 
@@ -63,13 +65,14 @@ A **local-first, offline-capable music player** that pairs a high-performance au
 - **Safe Renaming Templates:** Preview filename changes (e.g. `{artist} - {title}`) with collision detection before disk writing.
 
 ### 5. 🌐 Online Enrichment & External Intelligence (Optional)
+- **Clear Separation:** Core audio playback, visualizers, and crate management remain 100% functional offline without network access.
 - **MusicBrainz Integration:** Query open recording databases with rate-limit compliance.
 - **Cover Art Archive & LRCLIB:** Preview verified community release artwork and plain/synced lyrics.
-- **SerpApi Search Partner:** Search Google Knowledge Graph and organic web results for unindexed tracks; keys remain masked in local browser storage.
+- **SerpApi Search Partner:** User-provided SerpApi key is stored locally in client-side browser storage and sent directly in the browser's request URL to SerpApi. It is not stored on a remote server.
 - **Graceful Offline Degradation:** If internet is absent, all core local audio and AI features continue working seamlessly.
 
 ### 6. 🔄 16-Bit PCM Audio Converter
-- **Non-Destructive Transcoding:** Converts input audio to uncompressed WAV or OGG using Web Audio API buffer rendering.
+- **Non-Destructive Transcoding:** Converts input audio to uncompressed 16-bit PCM WAV using Web Audio API buffer decoding and custom RIFF encoding (WAV is fully verified; other format options are experimental).
 - **Configurable Audio Specs:** Sample rate (44.1kHz, 48kHz, 96kHz), channels (Mono/Stereo), and custom filename suffixes.
 
 ### 7. 📊 History & Transparent Recommendations
@@ -78,9 +81,9 @@ A **local-first, offline-capable music player** that pairs a high-performance au
 - **Transparent Recommendations:** Offline recommendation engine prioritizing unplayed gems with clear human-readable rationales.
 - **Local Control:** Toggle history tracking on/off anytime or purge records with one click.
 
-### 8. 🛡️ Privacy-First Sentry Telemetry
+### 8. 🛡️ Privacy-Preserving Sentry Telemetry (Optional)
 - **Diagnostic Observability:** Monitors application crashes and AI prompt latencies.
-- **Sanitized Telemetry:** Local filesystem paths, audio bytes, filenames, listening history, and user prompt strings are scrubbed by `beforeSend` filters.
+- **Sanitized Telemetry:** Local filesystem paths, audio bytes, filenames, listening history, and user prompt strings are scrubbed by `beforeSend` filters prior to dispatch.
 - **User Controlled:** Can be disabled at any time in Settings.
 
 ---
@@ -184,8 +187,21 @@ npx tauri build
 Generated packages will be located in:
 `src-tauri/target/release/bundle/`
 
-### Automated GitHub Actions CI
-The repository includes automated CI in [`.github/workflows/desktop-build.yml`](.github/workflows/desktop-build.yml) compiling native releases for both Ubuntu Linux and Windows x64.
+### Automated GitHub Actions CI & Desktop Releases
+The repository includes automated CI in [`.github/workflows/desktop-build.yml`](.github/workflows/desktop-build.yml) that builds native packages:
+- **Ubuntu Linux:** `.deb` and `.AppImage` packages compiled on `ubuntu-22.04`.
+- **Windows x64:** `.exe` installer compiled on `windows-latest`.
+
+*Note: Binaries will become publicly downloadable on the GitHub Releases page once a tagged release (e.g. `v0.14.0`) is published.*
+
+---
+
+## 🎬 Product Film & Demo Footage
+
+A Remotion-edited 1080p product film is available in `video/out/` alongside the original high-definition automated browser walkthrough:
+- **Remotion Product Film:** [`video/out/ghostwave_product_film.mp4`](video/out/ghostwave_product_film.mp4) (170s, 1080p 30fps with original soundtrack)
+- **Source Demo Recording:** [`docs/ghostwave_product_demo.mp4`](docs/ghostwave_product_demo.mp4) (Playwright end-to-end recording)
+- **Playwright Test Runner:** [`scripts/record-demo.spec.ts`](scripts/record-demo.spec.ts)
 
 ---
 
@@ -228,4 +244,4 @@ GhostWave is deployed as a static web application on **Render**:
 
 ## 📜 License
 
-MIT License. Developed for the **Hacktoberfest Open-Source AI Challenge Week 4: Ghost in the Machine**.
+This project is licensed under the terms of the [MIT License](LICENSE). Developed for the **Hacktoberfest Open-Source AI Challenge Week 4: Ghost in the Machine**.

@@ -26,7 +26,9 @@ Instead of treating AI as a cloud subscription dependency that reads all your pr
 
 - **Live Web App:** [https://ghostwave.onrender.com](https://ghostwave.onrender.com)
 - **GitHub Repository:** [https://github.com/edgiaxel/GhostWave](https://github.com/edgiaxel/GhostWave)
-- **High-Definition Walkthrough Video:** Available in the repository at [`docs/ghostwave_product_demo.mp4`](https://github.com/edgiaxel/GhostWave/blob/main/docs/ghostwave_product_demo.mp4).
+- **Remotion Product Film:** Available at [`video/out/ghostwave_product_film.mp4`](https://github.com/edgiaxel/GhostWave/blob/main/video/out/ghostwave_product_film.mp4) (170s, 1080p, original electronic soundtrack).
+- **Automated Walkthrough Source:** [`docs/ghostwave_product_demo.mp4`](https://github.com/edgiaxel/GhostWave/blob/main/docs/ghostwave_product_demo.mp4).
+- **YouTube Walkthrough Video:** *(Optional URL placeholder: add your published YouTube link here)*
 
 ---
 
@@ -78,15 +80,17 @@ Because Google released **Gemma 3** as an open-weight model, and because tools l
 
 ## The Spirit of It
 
-It was Halloween Eve. Outside my window, a violent thunderstorm rolled across the city. Lightning struck a transformer down the street, and our neighborhood went pitch black.
+*(An imagined product scenario inspired by local weather and connectivity concerns)*
 
-When power was restored ten minutes later, our home internet was dead—the ISP's junction box had blown out. We were hosting an intimate Halloween gathering with friends. My friend pulled out her phone to start the party playlist on Spotify: **Error: No Internet Connection. You are offline.**
+Imagine Halloween Eve. Outside, a violent seasonal thunderstorm rolls across the neighborhood. Lightning flickers, and the power blinks off.
 
-I grabbed my external hard drive packed with over a decade of local music: Japanese Vocaloid tracks, 90s eurobeat, synthwave, and classical files. We plugged it into my laptop, but we immediately hit a wall: half the filenames were unindexed unicode strings (`Matsuri（Official Video）(MP3_160K).mp3`), tags were missing, and nobody wanted to spend an hour manually clicking through folders while the party sat in silence.
+When power returns ten minutes later, the home internet remains dead. You have friends over for an evening gathering. Someone pulls out their phone to start a music playlist on a cloud streaming service: **Error: No Internet Connection. You are offline.**
 
-We needed a smart, high-energy playlist, and we needed it *right now*—without the internet.
+You plug in an external hard drive packed with over a decade of personal music: rare Vocaloid demos, synthwave, anime soundtracks, and classical files. But an immediate wall appears: half the filenames are unindexed unicode strings (`Matsuri（Official Video）(MP3_160K).mp3`), tags are missing, and nobody wants to spend an hour manually clicking through folders while everyone waits in silence.
 
-That night was the spark. I sat down and built GhostWave: a music player where the intelligence lives inside the machine with you. When the storm hits, the power flickers, and the fiber goes dark, the ghost in the machine awakens. You type what you feel, Gemma 3 finds the tracks, the neon waveforms pulse across your screen, and the music never stops.
+You need a smart, energetic playlist, and you need it right now, without the internet.
+
+That scenario is the creative spark behind GhostWave: a music player where the intelligence lives inside the machine with you. When connectivity drops, the ghost in the machine awakens. You type what you want in plain words, Gemma 3 curates the crate locally on your machine, the audio-reactive waveforms pulse across your screen, and the music never stops.
 
 ---
 
@@ -95,11 +99,11 @@ That night was the spark. I sat down and built GhostWave: a music player where t
 1. **Hacktoberfest Week 4: Ghost in the Machine (Main Category)**
    - Open-source AI project embracing the Halloween spirit, featuring reactive spectral visualizers and local open-weight AI curation.
 2. **Google Cloud / Gemma Track**
-   - Utilizes Google's open-weight **Gemma 3 4B** model for offline natural-language crate curation and structured schema validation.
+   - Utilizes Google's open-weight **Gemma 3 4B** model running locally via Ollama for offline natural-language crate curation and structured schema validation.
 3. **Sentry Observability Track**
    - Integrated with `@sentry/react` for diagnostic telemetry and AI lifecycle breadcrumbs with strict privacy scrubbers protecting local files and prompts.
 4. **SerpApi Track**
-   - Integrated with SerpApi to search the Google Knowledge Graph for obscure local music tracks, paired with a transparent human-in-the-loop review interface.
+   - Integrated with SerpApi to search the Google Knowledge Graph for unindexed tracks; keys are stored locally in the browser and passed directly to the search provider.
 
 ---
 

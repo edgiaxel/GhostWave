@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.14.1] - Remotion Product Film, Original Soundtrack & Documentation Refinement (2026-11-01)
+
+### Added
+- **Remotion Video Architecture (`video/`)**:
+  - Structured modular Remotion project isolated from the main application, utilizing React, TypeScript, and Remotion 4.0.
+  - Implemented 8 modular scene components (`IntroScene`, `ProblemScene`, `LibraryScene`, `PlayerScene`, `LocalAiScene`, `IntelligenceScene`, `HistoryScene`, `ClosingScene`) under `video/src/scenes/`.
+  - Created reusable design components: `AppWindowFrame`, `AnimatedTitle`, `FeatureCallout`, `SectionLabel`, `WaveformGraphic`, and `GhostParticles`.
+  - Configured centralized timeline (`video/src/config/timeline.ts`) targeting 2 minutes 50 seconds (5,100 frames at 30 FPS, 1920x1080).
+- **Original Synthesized Soundtrack (`video/public/soundtrack.wav`, `video/scripts/generate_soundtrack.py`)**:
+  - Developed custom audio synthesis script using standard library Python to produce a 170-second cinematic synthwave and atmospheric electronic soundtrack with thunder ambience, bass drops, rolling 16th bassline, drum sequencing, and Gemma 3 melodic arpeggios.
+- **MIT License File (`LICENSE`)**:
+  - Added official MIT license file to root of repository to match README declaration and ensure open-source compliance.
+
+### Changed
+- **Version Alignment**: Reconciled version mismatch between `package.json` (`0.14.0`) and `src-tauri/tauri.conf.json` (`0.14.0`).
+- **README Refinements (`README.md`)**:
+  - Origin story reframed honestly as an imagined product inspiration and scenario rather than a factual incident.
+  - Explicitly clarified that Gemma 3 runs locally via Ollama and requires local installation.
+  - Distinctly separated offline core audio functionality from optional online enrichment (MusicBrainz, Cover Art Archive, LRCLIB, SerpApi) and optional Sentry telemetry.
+  - Clarified SerpApi key handling: stored client-side in browser localStorage and sent directly in browser requests.
+  - Clarified audio conversion: verified 16-bit PCM WAV transcoding with experimental container export for other formats.
+  - Documented that Windows desktop builds are compiled on Windows CI runners and noted GitHub Releases status.
+- **DEV Challenge Submission Refinements (`docs/DEV_CHALLENGE_POST.md`)**:
+  - Updated origin story to match the imagined product inspiration narrative.
+  - Added links to the Remotion product film in `video/out/ghostwave_product_film.mp4` and preserved automated recording references.
+
+---
+
 ## [0.14.0] - Render Deployment, Product Origin Story, Walkthrough Demo Video & DEV Submission (2026-11-01)
 
 ### Added
