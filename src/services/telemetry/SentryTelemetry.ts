@@ -231,7 +231,11 @@ class SentryTelemetryService {
         action: 'test_error_button_click',
       });
     }
-    throw new Error('This is your first error!');
+    const err = new Error('This is your first error!');
+    if (this.isInitialized()) {
+      Sentry.captureException(err);
+    }
+    throw err;
   }
 }
 

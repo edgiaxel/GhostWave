@@ -11,7 +11,14 @@ export const LocalAiScreen: React.FC = () => {
     setRoute,
     generateAiPlaylistProposal,
     saveAiPlaylist,
+    testAiConnection,
   } = useApp();
+
+  React.useEffect(() => {
+    if (aiConnection.state === 'unconfigured') {
+      testAiConnection().catch(() => {});
+    }
+  }, [aiConnection.state, testAiConnection]);
 
   const [prompt, setPrompt] = useState('Halloween playlist under 45 minutes');
   const [isGenerating, setIsGenerating] = useState(false);

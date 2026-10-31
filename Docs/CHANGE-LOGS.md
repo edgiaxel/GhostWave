@@ -6,6 +6,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.13.0] - Comprehensive Automated QA & End-to-End Playwright Testing (2026-11-01)
+
+### Added
+- **Complete Playwright End-to-End Test Infrastructure (`playwright.config.ts`, `tests/`)**:
+  - Configured Playwright running against the live running application (`http://localhost:5173`) with full screenshot, tracing, and video diagnostics.
+  - Implemented 10 dedicated E2E test suites with 30 automated integration specs:
+    - `tests/01-navigation-theme.spec.ts`: App shell launching, deck routing, drag-to-resize split panes, Halloween Dark vs Light theme switching, and local storage settings reload persistence.
+    - `tests/02-library-management.spec.ts`: Real 74-track audio file import from `/home/axel/Music`, metadata extraction display, multi-field search filtering, empty search results, format filter pills (MP3/FLAC/All), table vs grid album card views, and corrupted audio failure resilience.
+    - `tests/03-playback-transport.spec.ts`: Real audio playback progression, time elapsed tracking, pause/resume, next/previous navigation, seek slider, volume and mute toggle, shuffle, repeat mode cycle, slide-up visualizer drawer, and queue drawer.
+    - `tests/04-playlists-crates.spec.ts`: Crate creation, adding tracks from library to crate, crate item inspection, title editing, and deletion with confirmation modal.
+    - `tests/05-health-metadata.spec.ts`: Library health audit, issue category filtering (missing tags, naming inconsistencies), side-by-side proposed tag diffs, inline proposal editing, approval, renaming template preview, and zero-file-alteration safety invariants.
+    - `tests/06-audio-conversion.spec.ts`: Row convert modal, WAV/OGG format selection, sample rate/channel configuration, custom suffix (`_pcm.wav`), real 16-bit PCM re-encoding, and non-destructive source preservation.
+    - `tests/07-history-recommendations.spec.ts`: Playback session scrobbling, event classification, KPI metrics (Sessions, Listening Time, Skip Rate, Top Genre), recommendations tab with transparent rationales, tracking toggle, and history clearing.
+    - `tests/08-local-ai-agent.spec.ts`: Real Ollama daemon integration (`http://127.0.0.1:11434`), `gemma3:4b` discovery & prompt test, natural language crate generation query, structured JSON schema inference, duration/track constraint enforcement, and saving generated crate to user playlists.
+    - `tests/09-online-enrichment-serpapi.spec.ts`: Safe candidate lookup, MusicBrainz recording match, Tag Diff inspector, Artwork preview, LRCLIB lyrics preview, candidate proposals without automatic writes, and SerpApi settings credential masking.
+    - `tests/10-sentry-observability.spec.ts`: Sentry SDK initialization, settings toggle, telemetry disclosures, intentional "Break the world" error trigger, envelope interception, and privacy scrubbers verification.
+  - Test helper utilities in `tests/helpers.ts`: Fast IndexedDB library loader (`ensureLibraryLoaded`) importing all 74 tracks in ~1.8 seconds, synthetic WAV file generator, corrupted audio generator, and cleanup routines.
+
+### Fixed
+- **Ollama JSON Truncation (`src/services/ai/OllamaClient.ts`)**: Resolved context and prediction token truncation with `gemma3:4b` by increasing `num_ctx` to 8192 and `num_predict` to 1024.
+- **AI Playlist Parsing Robustness (`src/services/ai/AiPlaylistService.ts`)**: Added markdown code fence stripping (```` ```json ````) and regex fallback parsing `{[\s\S]*}` before throwing syntax errors; increased timeout to 45000ms.
+- **Local AI Connection Auto-Probe (`src/screens/LocalAiScreen.tsx`)**: Fixed initial disconnected state by proactively probing Ollama connection on mount if `aiConnection.state === 'unconfigured'`.
+- **SerpApi Credential & Provider Forwarding (`src/components/common/OnlineEnrichmentModal.tsx`)**: Passed user-configured `serpApiKey` and provider selection to `OnlineEnrichmentService` instead of hardcoding `undefined`.
+- **Sentry Exception Capture (`src/services/telemetry/SentryTelemetry.ts`)**: Dispatched `Sentry.captureException(err)` inside `triggerTestError()` before throwing so Sentry captures intentional errors caught by local UI handlers.
+- **Sentry Switch Accessibility (`src/screens/SettingsScreen.tsx`)**: Added `id="sentry-toggle"` and `aria-label="Toggle Sentry Observability"` to the checkbox input and linked `<label htmlFor="sentry-toggle">` for cross-browser click handling.
+
+### Verified
+- **100% Test Pass Rate**: 121 / 121 Vitest unit tests passed (12 test suites); 30 / 30 Playwright E2E tests passed (10 test suites).
+- **Zero File Mutation Invariant**: All 74 audio tracks in `/home/axel/Music` remain 100% intact and uncorrupted.
+- **Production Build Clean**: TypeScript and Vite bundle compiled cleanly in 4.63s with 0 errors.
+
+---
+
 ## [0.12.0] - Sentry AI Observability, SerpApi Enrichment & Tauri CI Workflow (2026-11-01)
 
 ### Added

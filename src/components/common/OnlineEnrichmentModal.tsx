@@ -67,13 +67,18 @@ export const OnlineEnrichmentModal: React.FC<OnlineEnrichmentModalProps> = ({ tr
     setCoverArt(null);
     setLyrics(null);
 
-    const service = new OnlineEnrichmentService(settings.onlineEnrichment.provider === 'none' ? undefined : undefined);
+    const service = new OnlineEnrichmentService(
+      settings.onlineEnrichment?.serpApiKey
+    );
 
     try {
-      const results = await service.searchCandidates({
-        title: qTitle.trim(),
-        artist: qArtist.trim(),
-      });
+      const results = await service.searchCandidates(
+        {
+          title: qTitle.trim(),
+          artist: qArtist.trim(),
+        },
+        settings.onlineEnrichment?.provider === 'serpapi' ? 'serpapi' : 'musicbrainz'
+      );
 
       setCandidates(results);
       if (results.length > 0) {

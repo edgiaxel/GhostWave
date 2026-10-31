@@ -674,8 +674,10 @@ export const SettingsScreen: React.FC = () => {
               <span className="material-symbols-outlined text-primary text-lg">monitoring</span>
               <h2 className="font-headline font-semibold text-sm text-on-surface">AI &amp; App Observability (Sentry)</h2>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label htmlFor="sentry-toggle" className="relative inline-flex items-center cursor-pointer">
               <input
+                id="sentry-toggle"
+                aria-label="Toggle Sentry Observability"
                 type="checkbox"
                 checked={sentryEnabled}
                 onChange={(e) => setSentryEnabled(e.target.checked)}

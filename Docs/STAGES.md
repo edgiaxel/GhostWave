@@ -20,14 +20,14 @@ This does **not** mean building every module in isolation and connecting them on
 
 A stage is complete only when:
 
-- [ ] Its stated goal and acceptance criteria are met.
-- [ ] Relevant success, empty, invalid, and failure states are handled.
-- [ ] The module's isolated tests pass, where applicable.
-- [ ] The module is integrated with existing modules.
-- [ ] Regression tests for affected modules pass.
-- [ ] Build/typecheck/lint checks have been run where available.
-- [ ] Manual verification steps and limitations are documented.
-- [ ] Documentation and contracts reflect intentional changes.
+- [x] Its stated goal and acceptance criteria are met.
+- [x] Relevant success, empty, invalid, and failure states are handled.
+- [x] The module's isolated tests pass, where applicable.
+- [x] The module is integrated with existing modules.
+- [x] Regression tests for affected modules pass.
+- [x] Build/typecheck/lint checks have been run where available.
+- [x] Manual verification steps and limitations are documented.
+- [x] Documentation and contracts reflect intentional changes.
 - [ ] Axel has reviewed the result and explicitly approved stage completion.
 
 A stage is not complete merely because a page exists or a button works once.

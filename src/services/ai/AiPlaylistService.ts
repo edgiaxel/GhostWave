@@ -300,7 +300,7 @@ Select appropriate tracks, choose an evocative crate name, and describe your cur
         systemPrompt,
         format: PLAYLIST_QUERY_SCHEMA,
         temperature: 0.2,
-        timeoutMs: 30000,
+        timeoutMs: 45000,
       });
 
       sentryTelemetry.captureAiRequestCompleted({
@@ -319,16 +319,35 @@ Select appropriate tracks, choose an evocative crate name, and describe your cur
       throw err;
     }
 
-    let parsed;
+    let parsed: unknown = undefined;
     try {
-      parsed = result.parsedJson ?? JSON.parse(result.response);
-    } catch (err: unknown) {
-      sentryTelemetry.captureAiResponseInvalid({
-        model: result.model || modelTarget,
-        category: 'json_syntax_error',
-        reason: err instanceof Error ? err.message : 'JSON parse failure',
-      });
-      throw err;
+      if (result.parsedJson && typeof result.parsedJson === 'object') {
+        parsed = result.parsedJson;
+      } else {
+        const cleaned = (result.response || '')
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/, '')
+          .replace(/\s*```$/, '')
+          .trim();
+        parsed = JSON.parse(cleaned);
+      }
+    } catch {
+      const match = (result.response || '').match(/\{[\s\S]*\}/);
+      if (match) {
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch {
+          // Fall through
+        }
+      }
+      if (!parsed) {
+        sentryTelemetry.captureAiResponseInvalid({
+          model: result.model || modelTarget,
+          category: 'json_syntax_error',
+          reason: 'JSON parse failure',
+        });
+        throw new Error('Model returned invalid or truncated JSON.');
+      }
     }
 
     let plan: PlaylistQueryPlan;

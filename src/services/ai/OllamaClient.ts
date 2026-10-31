@@ -211,6 +211,8 @@ export class OllamaClient implements LocalAiProvider {
       stream: false,
       options: {
         temperature: options?.temperature ?? 0.2,
+        num_ctx: 8192,
+        num_predict: 1024,
       },
     };
 
