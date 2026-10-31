@@ -389,17 +389,17 @@ Add a limit if a test takes longer than expected, kill it and just skip it and f
 - [x] Verify no user data is uploaded unexpectedly.
 
 ### S12.2 — Deployment and distribution
-- [ ] Deploy web version to Render.
-- [ ] Publish source on GitHub.
-- [ ] Publish only builds that have actually been tested.
-- [ ] Document setup, local AI configuration, limitations, and licenses.
+- [x] Deploy web version to Render.
+- [x] Publish source on GitHub.
+- [x] Publish only builds that have actually been tested.
+- [x] Document setup, local AI configuration, limitations, and licenses.
 - [ ] Check `.tech` promotion eligibility and renewal terms before claiming/using it.
 
 ### S12.3 — Demo and write-up
-- [ ] Record a clear demo showing the working user journey.
-- [ ] Explain local-first and open-weight AI choices.
-- [ ] Include partner technology only where it was genuinely used.
-- [ ] Verify challenge submission requirements and current partner prize rules.
-- [ ] Save/link agent session evidence if useful and permitted.
+- [x] Record a clear demo showing the working user journey.
+- [x] Explain local-first and open-weight AI choices.
+- [x] Include partner technology only where it was genuinely used.
+- [x] Verify challenge submission requirements and current partner prize rules.
+- [x] Save/link agent session evidence if useful and permitted.
 
 **Exit gate:** A reviewer can understand the product, run the documented build, reproduce the core demo, and distinguish verified features from future plans.

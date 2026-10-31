@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.14.0] - Render Deployment, Product Origin Story, Walkthrough Demo Video & DEV Submission (2026-11-01)
+
+### Added
+- **Render Production Deployment Architecture (`render.yaml`, `public/_redirects`)**:
+  - Configured Render Blueprint (`render.yaml`) specifying static web service runtime with automated build command (`npm install && npm run build`), static publish path (`./dist`), and security headers.
+  - Implemented seamless SPA routing via `public/_redirects` (`/* /index.html 200`) and Render route rewrite rules to eliminate 404 errors on deep routes.
+- **Product Origin Story & Polished README (`README.md`, `docs/assets/youtube_thumbnail.jpg`)**:
+  - Detailed the "Ghost in the Machine" origin story: the Halloween Eve thunderstorm power outage, loss of cloud streaming services, and the need for local-first music playback with local open-weight AI (Gemma 3 via Ollama) running offline.
+  - Comprehensive feature tour, architecture diagram, local AI setup instructions, Tauri desktop compilation steps, and QA verification evidence.
+- **YouTube Video Thumbnail Artwork**:
+  - Rendered 16:9 4K visual identity thumbnail with neon orange and purple spectral audio waveforms, glowing Jack-o'-Lanterns, glassmorphic now-playing card, and bold GhostWave branding.
+- **High-Definition Product Walkthrough Video (`docs/ghostwave_product_demo.mp4`, `scripts/record-demo.spec.ts`)**:
+  - Built automated Playwright recording pipeline capturing the live running application across 8 core scenes at 1920x1080 resolution.
+  - Assembled with ffmpeg featuring cinematic fade-in/fade-out title cards and exported to `docs/ghostwave_product_demo.mp4` (93 seconds, 1080p, 30fps).
+- **Official DEV Submission Draft (`docs/DEV_CHALLENGE_POST.md`)**:
+  - Complete, formatted submission post for Hacktoberfest Open-Source AI Challenge Week 4: Ghost in the Machine.
+  - Covers What I Built, Demo links, Code embed, How I Built It, Why Open Innovation Matters, The Spirit of It, and Partner Prize Track entries (Google Cloud/Gemma, Sentry Observability, SerpApi).
+
+---
+
 ## [0.13.0] - Comprehensive Automated QA & End-to-End Playwright Testing (2026-11-01)
 
 ### Added

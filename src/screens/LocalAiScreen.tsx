@@ -200,6 +200,7 @@ export const LocalAiScreen: React.FC = () => {
           </div>
           <button
             type="submit"
+            onClick={() => handleRunPrompt()}
             disabled={isGenerating}
             className="px-5 py-2.5 rounded-full bg-primary text-on-primary text-xs font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 shrink-0"
           >
